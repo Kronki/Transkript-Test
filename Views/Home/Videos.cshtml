@@ -1,0 +1,10 @@
+﻿@model List<Video>
+@{
+
+}
+    <div>
+    @foreach(var video in Model)
+    {
+        <h1><a asp-action="Video" asp-route-id="@video.Id">@video.FileName</a></h1>
+    }
+</div>

@@ -1,0 +1,144 @@
+﻿@{
+
+}
+
+@* <div>
+    <video id="videoPlayer" width="640" height="360" controls>
+        <source src="~/Videos/@Model.FileName" type="video/mp4">
+        @* <track label="English" kind="subtitles" srclang="en" src="path/to/your/subtitle.vtt" default>
+        <!-- Add more <track> elements for additional subtitle languages if needed -->
+        Your browser does not support the video tag.
+    </video>
+</div>
+*@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Subtitle Editor</title>
+    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet">
+    <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/subtitlejs/0.1.1/subtitle.js"></script>
+    <style>
+        #subtitleContainer {
+            position: relative;
+            width: 789px;
+            height: 444px;
+        }
+
+        #subtitleTrack {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            text-align: center;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="subtitleContainer">
+        <iframe width="789" height="444" src="https://www.youtube.com/embed/1fTb6746zoE"
+                title="A-Train Saves The Boys from Black Noir and The Deep | The Boys | Prime Video"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen>
+        </iframe>
+        <div id="subtitleTrack"></div>
+    </div>
+    @section scripts {
+        <script>
+            function loadSubtitles(subtitleUrl) {
+                fetch(subtitleUrl)
+                    .then(response => response.text())
+                    .then(text => {
+                        var cues = parseVTT(text);
+                        displaySubtitles(cues);
+                    })
+                    .catch((err) => {
+                        console.log("error", err);
+                    });
+            }
+
+            function parseVTT(vttText) {
+                const lines = vttText.split('\n');
+                let cues = [];
+                let cue = null;
+
+                lines.forEach(line => {
+                    if (containsNumber(line) && line.length < 5) {
+                        line = "";
+                    }
+                    if (line.startsWith('00:')) {
+                        if (cue) cues.push(cue);
+                        cue = { time: line.split(' --> '), text: '' };
+                    } else if (cue && line) {
+                        cue.text += line + '\n';
+                    }
+                });
+
+                if (cue) {
+                    cue.text = removeNumbers(cue.text); // Ensure to use updated function
+                    cues.push(cue);
+                }
+                console.log(cues);
+                return cues;
+            }
+
+            function containsNumber(str) {
+                return /\d/.test(str);
+            }
+
+            function removeNumbers(inputString) {
+                return inputString.replace(/(\r\n\r\n)\d+(\r\n)/g, '$1$2');
+            }
+
+            function displaySubtitles(cues) {
+                const subtitleElement = document.getElementById('subtitleTrack');
+                subtitleElement.innerHTML = '';
+
+                let totalDelay = 0;
+                let videoStartTime = 0; // Initialize video start time
+
+                cues.forEach(cue => {
+                    const div = document.createElement('div');
+                    div.innerHTML = cue.text;
+
+                    const startTime = timeToSeconds(cue.time[0]) - videoStartTime;
+                    const endTime = timeToSeconds(cue.time[1]) - videoStartTime;
+                    const duration = (endTime - startTime) * 1000;
+
+                    setTimeout(() => {
+                        subtitleElement.appendChild(div);
+                        setTimeout(() => div.remove(), duration);
+                    }, totalDelay);
+
+                    totalDelay += duration;
+                });
+            }
+
+            function timeToSeconds(time) {
+                var parts = time.split(':');
+                var seconds = parseFloat(parts[2]);
+                var minutes = parseInt(parts[1], 10);
+                var hours = parseInt(parts[0], 10);
+                return seconds + (minutes * 60) + (hours * 3600);
+            }
+
+            // Load subtitles and adjust timing when the page loads
+            window.addEventListener('load', () => {
+                loadSubtitles('/Subtitles/Sub1.vtt');
+
+                // Adjust subtitle timing based on iframe load
+                const iframe = document.querySelector('iframe');
+                iframe.addEventListener('load', () => {
+                    videoStartTime = new Date().getTime() / 1000;
+                });
+            });
+        </script>
+    }
+</body>
+</html>

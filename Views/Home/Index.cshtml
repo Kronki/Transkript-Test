@@ -1,0 +1,35 @@
+﻿@model Request;
+@{
+    ViewData["Title"] = "Home Page";
+    var selectVideos = ViewData["SelectVideos"] as SelectList;
+}
+
+<div class="text-center">
+    <form asp-action="AddVideo" method="post" enctype="multipart/form-data">
+        <input asp-for="MyFile" id="my-file" type="file" placeholder="Video" />
+        <button type="submit">Upload Video</button>
+    </form>
+    <hr />
+    <form class="mt-5" asp-action="AddSubtitle" method="post" enctype="multipart/form-data">
+        <input asp-for="MyFile" id="my-file2" type="file" placeholder="Video" />
+        <select asp-for="VideoId" class="form-control mt-3 mb-3" asp-items="selectVideos" id="businessesOfEmployee">
+            <option value="">Zgjedh videon</option>
+        </select>
+        <button type="submit">Upload Subtitle</button>
+    </form>
+</div>
+
+@section scripts {
+    <script>
+        // const test = async () => {
+        //     var fileInput = document.getElementById("my-file");
+        //     await fetch("http://localhost:5157/Home/AddVideo", {
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //         },
+        //         method: "POST",
+        //         body: fileInput.files[0]
+        //     })
+        // }
+    </script>
+}

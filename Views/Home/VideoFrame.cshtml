@@ -1,5 +1,6 @@
 ﻿@{
-
+    var clientIdentifier = "3dc1bb3515be9b3683851a3de5ffa83b872b52fd";
+    var clientSecret = "fgglthuzk5arXyFzTLswL9MljkTNkS571PLXPeToCDDfP8UdoKCb/vOx07pu9gXdJ2Bz/ubEHxj4VqID3lRq2vrfSJL06S6Wezc0UrMM5vmguwit3bOegHebgBQjEvfm";
 }
 
 @* <div>
@@ -37,20 +38,57 @@
             padding: 5px;
         }
     </style>
+    <script src="https://player.vimeo.com/api/player.js"></script>
 </head>
 <body>
     <div id="subtitleContainer">
-        <iframe width="789" height="444" src="https://www.youtube.com/embed/1fTb6746zoE"
+        <iframe src="https://player.vimeo.com/video/990565046?title=0&amp;byline=0&amp;portrait=0&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="789" height="444" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write" title="Test"></iframe>
+        @* <iframe src="https://vimeo.com/990565046" width="789"
+        height="444"
+        frameborder="0"
+        webkitallowfullscreen
+        mozallowfullscreen
+        allowfullscreen></iframe> *@
+        @* <iframe width="789" height="444" src="https://www.youtube.com/embed/1fTb6746zoE"
                 title="A-Train Saves The Boys from Black Noir and The Deep | The Boys | Prime Video"
                 frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerpolicy="strict-origin-when-cross-origin"
                 allowfullscreen>
-        </iframe>
+        </iframe> *@
+        <input id="client-identifier" hidden value="@clientIdentifier"/>
+        <input id="client-secret" hidden value="@clientSecret"/>
         <div id="subtitleTrack"></div>
+        <button onclick="getSeconds()">Get seconds</button>
+        <button class="mt-3" onclick="getVimeoURI(990565046)">Get Video URI</button>
+        <button class="mt-3" onclick="getAccessToken()">Get Access Token</button>
+        <button class="mt-3" onclick="getSubtitleUpload()">Get Subtitle Upload Link</button>
     </div>
     @section scripts {
         <script>
+            var textTrack = "";
+            var accessToken = "0bdb22134b168497f1f3ba85fe2beab5";
+            var iframe = document.querySelector('iframe');
+            var player = new Vimeo.Player(iframe);
+            player.setVolume(0).then(() => {
+
+            })
+
+            player.on('play', function () {
+                loadSubtitles('/Subtitles/Sub1.vtt');
+                console.log('Played the video');
+            });
+
+            player.getVideoTitle().then(function (title) {
+                // console.log('title:', title);
+            });
+
+            const getSeconds = () => {
+                player.getCurrentTime().then((seconds) => {
+                    console.log(seconds);
+                })
+            }
+
             function loadSubtitles(subtitleUrl) {
                 fetch(subtitleUrl)
                     .then(response => response.text())
@@ -61,6 +99,69 @@
                     .catch((err) => {
                         console.log("error", err);
                     });
+            }
+            
+            function getVimeoURI(videoId) {
+                fetch(`https://api.vimeo.com/videos/${videoId}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `bearer ${accessToken}`,
+                        "Accept": "application/vnd.vimeo.*+json;version=3.4",
+                    }
+                }).then(response => response.json())
+                .then((response) => {
+                    textTrack = response.metadata.connections.texttracks.uri;
+                })
+                fetch("https://api.vimeo.com/languages?filter=texttracks", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `bearer ${accessToken}`,
+                    }
+                })
+                .then(response => response.json())
+                .then((resp) => {
+                    console.log(resp);
+                })
+            }
+
+            function getSubtitleUpload() {
+                fetch(`https://api.vimeo.com${textTrack}`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                        "Accept": "application/vnd.vimeo.*+json;version=3.4",
+                    },
+                    body: {
+                        "type": "subtitles",
+                        "language": "en",
+                        "name": "English"
+                    }
+                }).then(response => response.json())
+                    .then((response) => {
+                        console.log(response);
+                    })
+            }
+
+            function getAccessToken() {
+                var clientIdentifier = document.getElementById("client-identifier").value;
+                var clientSecret = document.getElementById("client-secret").value;
+                var config = {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `basic base64_encode(${clientIdentifier}:${clientSecret})`,
+                        "Content-Type": "application/json",
+                        "Accept": "application/vnd.vimeo.*+json;version=3.4",
+                    },
+                    body: {
+                        "grant_type": "client_credentials",
+                        "scope": "public"
+                    }
+                }
+                fetch(`https://api.vimeo.com/oauth/authorize/client`, config).then(response => response.json())
+                .then((resp) => {
+                    console.log(resp);
+                })
             }
 
             function parseVTT(vttText) {
@@ -84,7 +185,6 @@
                     cue.text = removeNumbers(cue.text); // Ensure to use updated function
                     cues.push(cue);
                 }
-                console.log(cues);
                 return cues;
             }
 
@@ -130,10 +230,11 @@
 
             // Load subtitles and adjust timing when the page loads
             window.addEventListener('load', () => {
-                loadSubtitles('/Subtitles/Sub1.vtt');
+                // loadSubtitles('/Subtitles/Sub1.vtt');
 
                 // Adjust subtitle timing based on iframe load
                 const iframe = document.querySelector('iframe');
+                // console.dir(iframe)
                 iframe.addEventListener('load', () => {
                     videoStartTime = new Date().getTime() / 1000;
                 });

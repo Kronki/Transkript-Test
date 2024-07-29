@@ -51,6 +51,7 @@
 
         <button class="mt-3" id="save-button">Save Subtitles</button>
         <button class="mt-3" onclick="activateSubtitles()">Activate Subtitles</button>
+        <button class="mt-3" onclick="getURITracks()">Get Track URI</button>
     </div>
     @section scripts {
         <script>
@@ -258,82 +259,19 @@
                 })
             }
 
-
-            // function parseVTT(vttText) {
-            //     const lines = vttText.split('\n');
-            //     let cues = [];
-            //     let cue = null;
-
-            //     lines.forEach(line => {
-            //         if (containsNumber(line) && line.length < 5) {
-            //             line = "";
-            //         }
-            //         if (line.startsWith('00:')) {
-            //             if (cue) cues.push(cue);
-            //             cue = { time: line.split(' --> '), text: '' };
-            //         } else if (cue && line) {
-            //             cue.text += line + '\n';
-            //         }
-            //     });
-
-            //     if (cue) {
-            //         cue.text = removeNumbers(cue.text); // Ensure to use updated function
-            //         cues.push(cue);
-            //     }
-            //     return cues;
-            // }
-
-            // function containsNumber(str) {
-            //     return /\d/.test(str);
-            // }
-
-            // function removeNumbers(inputString) {
-            //     return inputString.replace(/(\r\n\r\n)\d+(\r\n)/g, '$1$2');
-            // }
-
-            // function displaySubtitles(cues) {
-            //     const subtitleElement = document.getElementById('subtitleTrack');
-            //     subtitleElement.innerHTML = '';
-
-            //     let totalDelay = 0;
-            //     let videoStartTime = 0; // Initialize video start time
-
-            //     cues.forEach(cue => {
-            //         const div = document.createElement('div');
-            //         div.innerHTML = cue.text;
-
-            //         const startTime = timeToSeconds(cue.time[0]) - videoStartTime;
-            //         const endTime = timeToSeconds(cue.time[1]) - videoStartTime;
-            //         const duration = (endTime - startTime) * 1000;
-
-            //         setTimeout(() => {
-            //             subtitleElement.appendChild(div);
-            //             setTimeout(() => div.remove(), duration);
-            //         }, totalDelay);
-
-            //         totalDelay += duration;
-            //     });
-            // }
-
-            // function timeToSeconds(time) {
-            //     var parts = time.split(':');
-            //     var seconds = parseFloat(parts[2]);
-            //     var minutes = parseInt(parts[1], 10);
-            //     var hours = parseInt(parts[0], 10);
-            //     return seconds + (minutes * 60) + (hours * 3600);
-            // }
-
-            // // Load subtitles and adjust timing when the page loads
-            // window.addEventListener('load', () => {
-            //     // loadSubtitles('/Subtitles/Sub1.vtt');
-
-            //     // Adjust subtitle timing based on iframe load
-            //     const iframe = document.querySelector('iframe');
-            //     // console.dir(iframe)
-            //     iframe.addEventListener('load', () => {
-            //         videoStartTime = new Date().getTime() / 1000;
-            //     });
-            // });
+            function getURITracks() {
+                fetch(`https://api.vimeo.com/videos/${videoId}/texttracks`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `bearer ${accessToken}`,
+                        "Accept": "application/vnd.vimeo.*+json;version=3.4",
+                    },
+                })
+                .then(response => response.json())
+                .then((response) => {
+                    console.log("track got", response);
+                })
+            }
 
         </script>
     }

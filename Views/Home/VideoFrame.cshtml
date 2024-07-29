@@ -50,12 +50,13 @@
         </div>
 
         <button class="mt-3" id="save-button">Save Subtitles</button>
+        <button class="mt-3" onclick="activateSubtitles()">Activate Subtitles</button>
     </div>
     @section scripts {
         <script>
             var accessToken = "0bdb22134b168497f1f3ba85fe2beab5";
-            var subtitleUploadURI = "";
             var subtitleUploadLink = "";
+            var textTrackURI = "";
             var iframe = document.querySelector('iframe');
             var videoId = getVimeoId(iframe.src);
             // getVimeoURI();
@@ -96,6 +97,7 @@
                     }
                 }).then(response => response.json())
                     .then((response) => {
+                        textTrackURI = response.metadata.connections.texttracks.uri;
                         getSubtitleUpload(response.metadata.connections.texttracks.uri);
                     });
             }
@@ -115,9 +117,8 @@
                     })
                 }).then(response => response.json())
                     .then((response) => {
-                        subtitleUploadURI = response.uri;
                         subtitleUploadLink = response.link;
-                        console.log(response);
+                        encodeSubtitles(response.link);
                     });
             }
 
@@ -188,7 +189,7 @@
                 lastSubtitle.appendChild(newButton);
             };
 
-            document.getElementById('save-button').addEventListener('click', function () {
+            function encodeSubtitles(link) {
                 var subtitles = 'WEBVTT\n\n';
 
                 var subtitleTexts = document.getElementsByClassName('subtitle-text');
@@ -200,7 +201,11 @@
                 })
                 var encodedSubtitles = encodeURIComponent(subtitles);
 
-                saveSubtitlesToServer(subtitles);
+                saveSubtitlesToServer(subtitles, link);
+            }
+
+            document.getElementById('save-button').addEventListener('click', function () {
+                getVimeoURI();
             });
 
             const validateTime = (event) => {
@@ -215,24 +220,43 @@
                 return hours * 3600 + minutes * 60 + seconds;
             };
 
-            const saveSubtitlesToServer = (subtitles) => {
-                console.log("Upload link", subtitleUploadLink);
-                fetch(subtitleUploadLink, {
+            const saveSubtitlesToServer = (subtitles, link) => {
+                fetch(link, {
                     method: "PUT",
                     headers: {
-                        'Authorization': `bearer ${accessToken}`,
                         'Content-Type': 'text/vtt',
                         'Accept': 'application/vnd.vimeo.*+json;version=3.4'
                     },
                     body: subtitles
-                }).then(response => response.json())
-                    .then((response) => {
-                        console.log(response);
+                }).then((response) => {
+                    console.log(response);
                     })
                     .catch((err) => {
                         console.log("err", err);
                     })
             };
+
+            function activateSubtitles() {
+                console.log(textTrackURI);
+                fetch(`https://api.vimeo.com/videos/990565046/texttracks`, {
+                    method: "PATCH",
+                    headers: {
+                        "Authorization": `bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                        "Accept": "application/vnd.vimeo.*+json;version=3.4"
+                    },
+                    body: {
+                        "active": true,
+                    }
+                })
+                .then(response => response.json())
+                .then((response) => {
+                    console.log(response);
+                })
+                .catch((err) => {
+                    console.log("err", err);
+                })
+            }
 
 
             // function parseVTT(vttText) {

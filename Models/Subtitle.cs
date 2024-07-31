@@ -11,5 +11,6 @@ namespace TranskriptTest.Models
         public Video? Video { get; set; }
         [ForeignKey("VideoId")]
         public int VideoId { get; set; }
+        public List<SubtitleRequest>? SubtitleRequests { get; set; }
     }
 }

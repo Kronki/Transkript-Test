@@ -64,10 +64,10 @@
             var player = new Vimeo.Player(iframe);
             player.setVolume(0).then(() => { });
 
-            player.on('play', function () {
-                loadSubtitles('/Subtitles/Sub1.vtt');
-                console.log('Played the video');
-            });
+            // player.on('play', function () {
+            //     loadSubtitles('/Subtitles/Sub1.vtt');
+            //     console.log('Played the video');
+            // });
 
             player.getVideoTitle().then(function (title) { });
 

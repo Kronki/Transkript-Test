@@ -183,5 +183,41 @@ namespace TranskriptTest.Controllers
         {
             return View();
         }
+        public IActionResult SaveTextTrackToDb(string content, string link, string uri, int id)
+        {
+            var subtitleRequest = new SubtitleRequest
+            {
+                TextTrackContent = content,
+                TextTrackUri = uri,
+                TextTrackId = id,
+            };
+            _db.SubtitleRequests.Add(subtitleRequest);
+            var isSaved = _db.SaveChanges();
+            return Ok(isSaved);
+        }
+        public IActionResult EditSubtitles()
+        {
+            var subtitleRequest = _db.SubtitleRequests.ToList();
+            var selectList = new SelectList(subtitleRequest, "TextTrackId", "TextTrackId");
+            ViewData["Subtitles"] = selectList;
+            return View();
+        }
+        public IActionResult GetSubsFromDb(int textTrackId)
+        {
+            var subtitleRequest = _db.SubtitleRequests.FirstOrDefault(x => x.TextTrackId == textTrackId);
+            if (subtitleRequest == null)
+                return Ok("");
+            return Ok(subtitleRequest.TextTrackContent);
+        }
+        public IActionResult EditSubs(int trackId, string content)
+        {
+            var subtitleRequest = _db.SubtitleRequests.FirstOrDefault(x => x.TextTrackId == trackId);
+            if (subtitleRequest == null)
+                return Ok(false);
+            subtitleRequest.TextTrackContent = content;
+            _db.SubtitleRequests.Update(subtitleRequest);
+            var isSaved = _db.SaveChanges();
+            return Ok(isSaved >= 1);
+        }
     }
 }

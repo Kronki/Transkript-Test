@@ -11,8 +11,8 @@ using TranskriptTest.Data;
 namespace TranskriptTest.Migrations
 {
     [DbContext(typeof(VideoDbContext))]
-    [Migration("20240725141402_test")]
-    partial class test
+    [Migration("20240805064000_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -49,10 +49,38 @@ namespace TranskriptTest.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("VideoId")
-                        .IsUnique();
+                    b.HasIndex("VideoId");
 
                     b.ToTable("Subtitles");
+                });
+
+            modelBuilder.Entity("TranskriptTest.Models.SubtitleRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("SubtitleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TextTrackContent")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("TextTrackId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TextTrackUri")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubtitleId");
+
+                    b.ToTable("SubtitleRequests");
                 });
 
             modelBuilder.Entity("TranskriptTest.Models.Video", b =>
@@ -79,17 +107,33 @@ namespace TranskriptTest.Migrations
             modelBuilder.Entity("TranskriptTest.Models.Subtitle", b =>
                 {
                     b.HasOne("TranskriptTest.Models.Video", "Video")
-                        .WithOne("Subtitle")
-                        .HasForeignKey("TranskriptTest.Models.Subtitle", "VideoId")
+                        .WithMany("Subtitles")
+                        .HasForeignKey("VideoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Video");
                 });
 
+            modelBuilder.Entity("TranskriptTest.Models.SubtitleRequest", b =>
+                {
+                    b.HasOne("TranskriptTest.Models.Subtitle", "Subtitle")
+                        .WithMany("SubtitleRequests")
+                        .HasForeignKey("SubtitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subtitle");
+                });
+
+            modelBuilder.Entity("TranskriptTest.Models.Subtitle", b =>
+                {
+                    b.Navigation("SubtitleRequests");
+                });
+
             modelBuilder.Entity("TranskriptTest.Models.Video", b =>
                 {
-                    b.Navigation("Subtitle");
+                    b.Navigation("Subtitles");
                 });
 #pragma warning restore 612, 618
         }

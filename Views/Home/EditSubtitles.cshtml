@@ -1,0 +1,159 @@
+﻿@{
+    var selectList = ViewData["Subtitles"] as SelectList;
+}
+
+<select onchange="getSubsFromDb(this.value)" class="form-control mt-3 mb-3" asp-items="selectList" id="movie-tracks">
+    <option value="">Zgjedh titrat</option>
+</select>
+<div id="subtitle-container">
+    <div id="subtitle-area">
+    </div>
+</div>
+<div class="mt-3">
+    <button onclick="encodeSubtitles()">Save Changes</button>
+</div>
+<script asp-append-version="true" src="~/js/subtitles.js"></script>
+<script>
+    var subtitles = "";
+    var timeStamps = "";
+    function getSubsFromDb(textTrackId) {
+        fetch(`/Home/GetSubsFromDb?textTrackId=${textTrackId}`)
+        .then(response => response.text())
+        .then((response) => {
+           subtitles = extractSubtitles(response);
+           timeStamps = convertSecondsToTimeFormat(extractTimestamps(response));
+           showCorrectSubs();
+        })
+    }
+
+    function extractSubtitles(subtitleString) {
+        // Remove "WEBVTT"
+        let cleanedString = subtitleString.replace(/WEBVTT/g, '');
+
+        // Use a regular expression to split by timestamps
+        let lines = cleanedString.split(/\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/)
+            .map(line => line.replace(/^\d+/, '').replace(/\d+$/, '').trim())  // Remove leading/trailing numbers and trim whitespace
+            .filter(line => line.length > 0);  // Filter out empty strings
+
+
+        return lines;
+    }
+
+    function extractTimestamps(subtitleString) {
+        // Regular expression to match timestamps
+        const timestampRegex = /\d{2}:\d{2}:\d{2}\.\d{3}/g;
+
+        // Extract timestamps
+        const timestamps = subtitleString.match(timestampRegex);
+
+        if (!timestamps) return [];
+
+        // Convert timestamps to seconds
+        const timestampsInSeconds = timestamps.map(timestamp => {
+            const [hours, minutes, seconds] = timestamp.split(':');
+            const [secs, millis] = seconds.split('.');
+            return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(secs) + parseInt(millis) / 1000;
+        });
+
+        return timestampsInSeconds;
+    }
+
+    function convertSecondsToTimeFormat(secondsArray) {
+        return secondsArray.map(seconds => {
+            // Calculate hours, minutes, and seconds
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+
+            // Format as hh:mm:ss with leading zeros
+            return [
+                hours.toString().padStart(2, '0'),
+                minutes.toString().padStart(2, '0'),
+                secs.toString().padStart(2, '0')
+            ].join(':');
+        });
+    }
+
+    function showCorrectSubs() {
+        var subtitleContainer = document.getElementById("subtitle-area");
+        subtitleContainer.innerHTML = '';
+        subtitles.forEach((s, i) => {
+            const subtitleDiv = document.createElement("div");
+            subtitleDiv.className = "mt-3 subtitle-editor";
+            const textArea = document.createElement('textarea');
+            textArea.className = "subtitle-text";
+            textArea.setAttribute("rows", "3");
+            textArea.setAttribute("cols", "49");
+            textArea.innerText = s;
+            const timeInputs = document.createElement("div");
+            timeInputs.className = "time-inputs";
+            const firstInput = document.createElement("input");
+            firstInput.value = timeStamps[2 * i];
+            firstInput.setAttribute("placeholder", "00:00:00");
+            const secondInput = document.createElement("input");
+            secondInput.value = timeStamps[(2 * i) + 1];
+            secondInput.setAttribute("placeholder", "00:00:05")
+
+            firstInput.onchange = function (event) {
+                validateTime(event);
+            };
+
+            secondInput.onchange = function (event) {
+                validateTime(event);
+            }
+
+            timeInputs.appendChild(firstInput);
+            timeInputs.appendChild(secondInput);
+
+            subtitleDiv.appendChild(textArea);
+            subtitleDiv.appendChild(timeInputs);
+            subtitleContainer.appendChild(subtitleDiv);
+        });
+
+        var editorDivs = document.getElementsByClassName("subtitle-editor");
+        var lastDiv = Array.from(editorDivs).at(-1);
+        var newButton = document.createElement('button');
+        newButton.id = 'add-section';
+        newButton.onclick = addSubtitleSection;
+        newButton.innerText = "Shto";
+        lastDiv.appendChild(newButton);
+        var subtitleContainer = document.getElementById("subtitle-container");
+        var deleteButton = document.getElementById("remove-button");
+        if (!deleteButton) {
+            var newButton = document.createElement("button");
+            newButton.innerText = "Fshij";
+            newButton.id = "remove-button";
+            newButton.className = "mt-3";
+            newButton.onclick = function (event) {
+                removeLast();
+            }
+            subtitleContainer.appendChild(newButton);
+        }
+    }
+
+    function encodeSubtitles() {
+        var subtitles = 'WEBVTT\n\n';
+
+        var subtitleTexts = document.getElementsByClassName('subtitle-text');
+        var subtitleInputDivs = document.getElementsByClassName('time-inputs');
+        [...subtitleTexts].forEach((e, i) => {
+            subtitles += `${i + 1}\n`;
+            subtitles += `${subtitleInputDivs[i].children[0].value}.000 --> ${subtitleInputDivs[i].children[1].value}.000\n`;
+            subtitles += `${e.value}\n\n`;
+        })
+        var encodedSubtitles = encodeURIComponent(subtitles);
+
+        var select = document.getElementById('movie-tracks');
+
+        fetch(`/Home/EditSubs?trackId=${select.value}&content=${subtitles}`)
+        .then(response => response.json())
+        .then((response) => {
+            if(response) {
+                location.reload();
+            }
+        })
+
+    }
+
+
+</script>

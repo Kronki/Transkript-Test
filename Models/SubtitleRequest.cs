@@ -9,10 +9,9 @@ namespace TranskriptTest.Models
         public int Id { get; set; }
         public int TextTrackId { get; set; }
         public string TextTrackUri { get; set; }
-        public string TextTrackLanguage { get; set; }
         public string TextTrackContent { get; set; }
         public Subtitle? Subtitle { get; set; }
         [ForeignKey("SubtitleId")]
-        public int SubtitleId { get; set; }
+        public int? SubtitleId { get; set; }
     }
 }

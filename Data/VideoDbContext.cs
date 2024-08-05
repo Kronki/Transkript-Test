@@ -12,6 +12,7 @@ namespace TranskriptTest.Data
 
         public DbSet<Video> Videos { get; set; }
         public DbSet<Subtitle> Subtitles { get; set; }
+        public DbSet<SubtitleRequest> SubtitleRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

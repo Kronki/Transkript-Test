@@ -118,8 +118,9 @@
                     })
                 }).then(response => response.json())
                     .then((response) => {
+                        console.log("1", response.id);
                         subtitleUploadLink = response.link;
-                        encodeSubtitles(response.link);
+                        encodeSubtitles(response.id, response.link);
                     });
             }
 
@@ -190,7 +191,7 @@
                 lastSubtitle.appendChild(newButton);
             };
 
-            function encodeSubtitles(link) {
+            function encodeSubtitles(id, link) {
                 var subtitles = 'WEBVTT\n\n';
 
                 var subtitleTexts = document.getElementsByClassName('subtitle-text');
@@ -202,7 +203,7 @@
                 })
                 var encodedSubtitles = encodeURIComponent(subtitles);
 
-                saveSubtitlesToServer(subtitles, link);
+                saveSubtitlesToServer(subtitles, link, id);
             }
 
             document.getElementById('save-button').addEventListener('click', function () {
@@ -221,7 +222,7 @@
                 return hours * 3600 + minutes * 60 + seconds;
             };
 
-            const saveSubtitlesToServer = (subtitles, link) => {
+            const saveSubtitlesToServer = (subtitles, link, id) => {
                 fetch(link, {
                     method: "PUT",
                     headers: {
@@ -230,15 +231,24 @@
                     },
                     body: subtitles
                 }).then((response) => {
-                    console.log(response);
+                    saveTextTrackToDb(subtitles, link, textTrackURI, id);
                     })
                     .catch((err) => {
                         console.log("err", err);
                     })
             };
 
+            function saveTextTrackToDb(content, link, uri, id) {
+                fetch(`/Home/SaveTextTrackToDb?content=${content}&link=${link}&uri=${uri}&id=${id}`, {
+                    method: "POST",
+                })
+                .then(response => response.json())
+                .then((response) => {
+                    console.log("Saved to db", response);
+                })
+            }
+
             function activateSubtitles() {
-                console.log(textTrackURI);
                 fetch(`https://api.vimeo.com/videos/990565046/texttracks`, {
                     method: "PATCH",
                     headers: {
@@ -270,6 +280,9 @@
                 .then(response => response.json())
                 .then((response) => {
                     console.log("track got", response);
+                    response.data.forEach((e, i) => {
+                        console.log(e);
+                    })
                 })
             }
 

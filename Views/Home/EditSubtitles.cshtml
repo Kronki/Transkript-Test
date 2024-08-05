@@ -14,6 +14,7 @@
 </div>
 <script asp-append-version="true" src="~/js/subtitles.js"></script>
 <script>
+    var accessToken = "0bdb22134b168497f1f3ba85fe2beab5";
     var subtitles = "";
     var timeStamps = "";
     function getSubsFromDb(textTrackId) {
@@ -90,9 +91,11 @@
             const firstInput = document.createElement("input");
             firstInput.value = timeStamps[2 * i];
             firstInput.setAttribute("placeholder", "00:00:00");
+            firstInput.className = "first-input";
             const secondInput = document.createElement("input");
             secondInput.value = timeStamps[(2 * i) + 1];
             secondInput.setAttribute("placeholder", "00:00:05")
+            secondInput.className = "second-input";
 
             firstInput.onchange = function (event) {
                 validateTime(event);
@@ -145,14 +148,70 @@
 
         var select = document.getElementById('movie-tracks');
 
-        fetch(`/Home/EditSubs?trackId=${select.value}&content=${subtitles}`)
-        .then(response => response.json())
-        .then((response) => {
-            if(response) {
-                location.reload();
+        var firstInputs = document.getElementsByClassName("first-input");
+        var secondInputs = document.getElementsByClassName("second-input");
+
+        var errorCount = [];
+
+        [...firstInputs].forEach((e, i) => {
+            if (timeToSeconds(e.value) > timeToSeconds(secondInputs[i].value)) {
+                // var p = document.createElement("p");
+                // p.innerText = "Vlera duhet të jetë më e madhe!";
+                // secondInputs[i].parentElement.appendChild(p);
+                alert("Koha me a lartë!!");
+                errorCount.push("1");
+                return;
             }
         })
 
+        if(errorCount.length <= 0)
+        fetch(`/Home/EditSubs?trackId=${select.value}&content=${subtitles}`)
+        .then(response => response.json())
+        .then((response) => {
+            if(response.isSaved) {
+                editInVimeo(select.value, response.trackURI, subtitles);
+            }
+        })
+
+    }
+
+    const validateTime = (event) => {
+        const timePattern = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+        if (!timePattern.test(event.target.value)) {
+            event.target.value = "00:00:00";
+        }
+    };
+
+    function editInVimeo(trackId, trackUri, subtitles) {
+        fetch(`https://api.vimeo.com${trackUri}/${trackId}`, {
+            method: "PATCH",
+            headers: {
+                "Authorization": `bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+                language: "en",
+                active: true,
+                name: "Titrat e dyta",
+                type: "subtitles",
+                text: subtitles,
+            })
+        }).then(response => response.json())
+        .then((response) => {
+                fetch(response.link, {
+                    method: "PUT",
+                    headers: {
+                        'Content-Type': 'text/vtt',
+                        'Accept': 'application/vnd.vimeo.*+json;version=3.4'
+                    },
+                    body: subtitles
+                }).then((response) => {
+                    console.log(response);
+                })
+                    .catch((err) => {
+                        console.log("err", err);
+                    })
+            console.log("After edit", response);
+        })
     }
 
 

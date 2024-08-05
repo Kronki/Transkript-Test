@@ -68,14 +68,6 @@ const removeLast = () => {
     lastSubtitle.appendChild(newButton);
 };
 
-
-const validateTime = (event) => {
-    const timePattern = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
-    if (!timePattern.test(event.target.value)) {
-        event.target.value = "00:00:00";
-    }
-};
-
 const timeToSeconds = (time) => {
     const [hours, minutes, seconds] = time.split(':').map(Number);
     return hours * 3600 + minutes * 60 + seconds;

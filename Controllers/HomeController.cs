@@ -217,7 +217,8 @@ namespace TranskriptTest.Controllers
             subtitleRequest.TextTrackContent = content;
             _db.SubtitleRequests.Update(subtitleRequest);
             var isSaved = _db.SaveChanges();
-            return Ok(isSaved >= 1);
+            return Ok(new { IsSaved = isSaved >= 1, TrackURI = subtitleRequest.TextTrackUri });
+
         }
     }
 }

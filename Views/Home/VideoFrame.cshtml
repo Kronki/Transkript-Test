@@ -62,25 +62,85 @@
             var videoId = getVimeoId(iframe.src);
             // getVimeoURI();
             var player = new Vimeo.Player(iframe);
-            player.setVolume(0).then(() => { });
+            // player.setVolume(0).then(() => { });
 
             // player.on('play', function () {
             //     loadSubtitles('/Subtitles/Sub1.vtt');
             //     console.log('Played the video');
             // });
 
-            player.getVideoTitle().then(function (title) { });
+            var newArray = [];
+            var afterArray = [];
+            var sections = 5;
+            var sum = 0;
 
-            function loadSubtitles(subtitleUrl) {
-                fetch(subtitleUrl)
-                    .then(response => response.text())
-                    .then(text => {
-                        var cues = parseVTT(text);
-                        displaySubtitles(cues);
+            player.getDuration().then((duration) => {
+                for (let i = 0; i < sections; i++) {
+                    var sectionTime = parseFloat(5786 / sections);
+                    // var before = sectionTime.toString().split(".")[0];
+                    var after = sectionTime.toString().split(".")[1];
+                    if(after) {
+                        if (i === sections - 1) {
+                            sectionTime += sum / 10;
+                            console.log(sectionTime);
+                        }
+                        sum += parseFloat(after);
+                    }
+                    
+                    newArray.push(formatTime(sectionTime));
+                }
+                console.log("times", newArray);
+                // console.log("after", afterArray);
+            })
+
+            player.on('loaded', function () {
+                var videoId = iframe.src.match(/video\/(\d+)/)[1];
+                loadSubtitles(videoId);
+            });
+
+            // player.getVideoTitle().then(function (title) { });
+
+            // player.enableTextTrack('en', 'subtitles').then((track) => {
+            //     console.log(track);
+            // })
+
+            // player.getTextTracks().then((tracks) => {
+            //     console.log("tracks", tracks);
+            // })
+
+            // function loadSubtitles(subtitleUrl) {
+            //     fetch(subtitleUrl)
+            //         .then(response => response.text())
+            //         .then(text => {
+            //             var cues = parseVTT(text);
+            //             displaySubtitles(cues);
+            //         })
+            //         .catch((err) => {
+            //             console.log("error", err);
+            //         });
+            // }
+
+
+
+            function loadSubtitles(videoId) {
+                fetch(`https://api.vimeo.com/videos/${videoId}/texttracks`, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data); // Check the fetched subtitle tracks
+                        var track = data.data.find(track => track.language === 'en'); // Adjust the language as needed
+                        if (track) {
+                            player.enableTextTrack(track.language, 'subtitles').then(function (track) {
+                                console.log('Subtitles enabled:', track);
+                            }).catch(function (error) {
+                                console.error('Error enabling subtitles:', error);
+                            });
+                        }
                     })
-                    .catch((err) => {
-                        console.log("error", err);
-                    });
+                    .catch(error => console.error('Error fetching subtitles:', error));
             }
 
             function getVimeoId(url) {
@@ -99,6 +159,7 @@
                 }).then(response => response.json())
                     .then((response) => {
                         textTrackURI = response.metadata.connections.texttracks.uri;
+                        console.log(response);
                         getSubtitleUpload(response.metadata.connections.texttracks.uri);
                     });
             }
@@ -284,6 +345,20 @@
                         console.log(e);
                     })
                 })
+            }
+
+            function formatTime(seconds) {
+                const secNum = parseInt(seconds, 10); // Ensure seconds is an integer
+                const hours = Math.floor(secNum / 3600);
+                const minutes = Math.floor((secNum % 3600) / 60);
+                const secs = secNum % 60;
+
+                // Pad with leading zeros
+                const formattedHours = hours < 10 ? "0" + hours : hours;
+                const formattedMinutes = minutes < 10 ? "0" + minutes : minutes;
+                const formattedSeconds = secs < 10 ? "0" + secs : secs;
+
+                return formattedHours + ":" + formattedMinutes + ":" + formattedSeconds;
             }
 
         </script>

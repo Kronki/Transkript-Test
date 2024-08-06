@@ -141,7 +141,7 @@
         var subtitleInputDivs = document.getElementsByClassName('time-inputs');
         [...subtitleTexts].forEach((e, i) => {
             subtitles += `${i + 1}\n`;
-            subtitles += `${subtitleInputDivs[i].children[0].value}.000 --> ${subtitleInputDivs[i].children[1].value}.000\n`;
+            subtitles += `${subtitleInputDivs[i].children[0].value}.000 --> ${subtitleInputDivs[i].children[1].value}.000 \n`;
             subtitles += `${e.value}\n\n`;
         })
         var encodedSubtitles = encodeURIComponent(subtitles);
@@ -183,10 +183,13 @@
     };
 
     function editInVimeo(trackId, trackUri, subtitles) {
-        fetch(`https://api.vimeo.com${trackUri}/${trackId}`, {
+        const link = `https://api.vimeo.com${trackUri}/${trackId}`;
+        console.log(link);
+        fetch(link, {
             method: "PATCH",
             headers: {
-                "Authorization": `bearer ${accessToken}`
+                "Authorization": `bearer ${accessToken}`,
+                "Content-Type": "text/vtt"
             },
             body: JSON.stringify({
                 language: "en",

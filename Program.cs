@@ -12,6 +12,8 @@ builder.Services.AddDbContext<VideoDbContext>(opt =>
     opt.EnableSensitiveDataLogging(true);
 });
 
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

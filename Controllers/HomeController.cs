@@ -7,6 +7,7 @@ using TranskriptTest.Models;
 using TranskriptTest.Models.DTO;
 using System.IO;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace TranskriptTest.Controllers
 {
@@ -219,6 +220,10 @@ namespace TranskriptTest.Controllers
             var isSaved = _db.SaveChanges();
             return Ok(new { IsSaved = isSaved >= 1, TrackURI = subtitleRequest.TextTrackUri });
 
+        }
+        public IActionResult EditAudio()
+        {
+            return View();
         }
     }
 }

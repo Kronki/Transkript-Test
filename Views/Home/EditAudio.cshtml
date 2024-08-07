@@ -1,0 +1,97 @@
+﻿@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    var host = HttpContextAccessor.HttpContext.Request.Host.ToString();
+    var scheme = HttpContextAccessor.HttpContext.Request.Scheme;
+    var subtitleUrl = $"{scheme}://{host}/Subtitles";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio with Subtitles</title>
+    <style>
+        #subtitleDisplay {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div style="margin-top: 200px;">
+        <audio id="audioPlayer" controls autoplay>
+            <source src="~/Audios/Yakuza.mp3" type="audio/mpeg" />
+        </audio>
+        <div id="subtitleDisplay"></div>
+    </div>
+    <script>
+        function loadSubtitles(url) {
+            fetch(url)
+                .then(response => response.text())
+                .then(text => {
+                    const cues = parseVTT(text);
+                    displaySubtitles(cues);
+                })
+                .catch(error => console.error('Error loading subtitles:', error));
+        }
+
+        function parseVTT(vttText) {
+            const lines = vttText.split('\n');
+            let cues = [];
+            let cue = null;
+
+            lines.forEach(line => {
+                if (line.includes('-->')) {
+                    if (cue) cues.push(cue);
+                    const [start, end] = line.split(' --> ');
+                    cue = { start: timeToSeconds(start), end: timeToSeconds(end), text: '' };
+                } else if (cue && line.trim()) {
+                    cue.text += line.trim() + '\n';
+                }
+            });
+
+            if (cue) cues.push(cue);
+            return cues;
+        }
+
+        function timeToSeconds(time) {
+            const parts = time.split(':');
+            const seconds = parseFloat(parts[2]);
+            const minutes = parseInt(parts[1], 10);
+            const hours = parseInt(parts[0], 10);
+            return seconds + (minutes * 60) + (hours * 3600);
+        }
+
+        function displaySubtitles(cues) {
+            const audio = document.getElementById('audioPlayer');
+            const subtitleDisplay = document.getElementById('subtitleDisplay');
+
+            audio.addEventListener('timeupdate', () => {
+                const currentTime = audio.currentTime;
+                const currentCue = cues.find(cue => currentTime >= cue.start && currentTime <= cue.end);
+
+                if (currentCue) {
+                    subtitleDisplay.innerText = currentCue.text;
+                } else {
+                    subtitleDisplay.innerText = '';
+                }
+            });
+        }
+
+        // Load subtitles when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const subtitleUrl = '@subtitleUrl';
+            loadSubtitles(subtitleUrl + "/Sub1.vtt");
+        });
+    </script>
+</body>
+</html>

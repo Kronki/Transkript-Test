@@ -225,5 +225,14 @@ namespace TranskriptTest.Controllers
         {
             return View();
         }
+        public IActionResult CreateAudio()
+        {
+            return View();
+        }
+        [HttpPost]
+        public IActionResult CreateAudio([FromForm]AudioFileRequest request)
+        {
+            return RedirectToAction("Index");
+        }
     }
 }

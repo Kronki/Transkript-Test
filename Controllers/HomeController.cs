@@ -8,6 +8,7 @@ using TranskriptTest.Models.DTO;
 using System.IO;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 
 namespace TranskriptTest.Controllers
 {
@@ -119,13 +120,13 @@ namespace TranskriptTest.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateSubtitle([FromBody] Subtitle subtitleDto)
-        {
-            var filePath = Path.Combine(_env.WebRootPath, "Subtitles", subtitleDto.FileName);
-            var result = await CreateSubtitleFileAsync(filePath, subtitleDto.Content);
-            return Ok(result);
-        }
+        //[HttpPost]
+        //public async Task<IActionResult> CreateSubtitle([FromBody] Subtitle subtitleDto)
+        //{
+        //    var filePath = Path.Combine(_env.WebRootPath, "Subtitles", subtitleDto.FileName);
+        //    var result = await CreateSubtitleFileAsync(filePath, subtitleDto.Content);
+        //    return Ok(result);
+        //}
 
         public async Task<string> ReadSubtitleFileAsync(string filePath)
         {
@@ -150,7 +151,7 @@ namespace TranskriptTest.Controllers
             var subtitle = new Subtitle
             {
                 Path = filePath,
-                Content = text,
+                //Content = text,
                 FileName = fileName,
                 Video = video,
             };
@@ -203,7 +204,7 @@ namespace TranskriptTest.Controllers
             ViewData["Subtitles"] = selectList;
             return View();
         }
-        public IActionResult GetSubsFromDb(int textTrackId)
+        public IActionResult GetVideoSubsFromDb(int textTrackId)
         {
             var subtitleRequest = _db.SubtitleRequests.FirstOrDefault(x => x.TextTrackId == textTrackId);
             if (subtitleRequest == null)
@@ -230,9 +231,66 @@ namespace TranskriptTest.Controllers
             return View();
         }
         [HttpPost]
-        public IActionResult CreateAudio([FromForm]AudioFileRequest request)
+        public async Task<IActionResult> CreateAudio([FromForm]AudioFileRequest request)
         {
+            if(request.File != null)
+            {
+                if (request.File.ContentType.Contains("audio"))
+                {
+                    var guidId = Guid.NewGuid().ToString();
+                    string wwwRootPath = _env.WebRootPath;
+                    string pathOfFolder = Path.Combine(wwwRootPath, "/Audios/");
+                    if (!Directory.Exists(pathOfFolder))
+                    {
+                        Directory.CreateDirectory(pathOfFolder);
+                    }
+                    string fileName = Path.GetFileNameWithoutExtension(request.File.FileName);
+                    string extension = Path.GetExtension(request.File.FileName);
+                    var audioFile = new AudioFile();
+                    audioFile.FilePath = fileName + guidId + extension;
+                    audioFile.FileSize = request.File.Length;
+                    string path = Path.Combine(wwwRootPath + "/Audios/", audioFile.FilePath);
+                    using (var fileStream = new FileStream(path, FileMode.Create))
+                    {
+                        await request.File.CopyToAsync(fileStream);
+                    }
+                    _db.AudioFiles.Add(audioFile);
+                    var isSaved = await _db.SaveChangesAsync();
+                    return RedirectToAction("Index");
+                }
+            }
             return RedirectToAction("Index");
+        }
+        public IActionResult EditAudios()
+        {
+            var audios = _db.AudioFiles.Include(x=>x.Subtitle).ToList();
+            var audiosAndSubtitles = new List<AudioFileAndSubtitle>();
+            foreach (var audioFile in audios)
+            {
+                var audioAndSubtitle = new AudioFileAndSubtitle
+                {
+                    Id = audioFile.Id,
+                    FilePath = audioFile.FilePath,
+                };
+                foreach(var subtitle in audioFile.Subtitle)
+                {
+                    var subtitleDTO = new SubtitleDTO()
+                    {
+                        Path = subtitle.Path,
+                        FileName = subtitle.FileName,
+                        //Content = subtitle.Content,
+                        Language = subtitle.Language,
+                    };
+                    audioAndSubtitle.Subtitles.Add(subtitleDTO);
+                }
+                audiosAndSubtitles.Add(audioAndSubtitle);
+            }
+            return View(audiosAndSubtitles);
+        }
+        public IActionResult GetSubsFromDb(int audioId)
+        {
+            var audio = _db.AudioFiles.Include(x=>x.Subtitle).Where(x=>x.Id == audioId).FirstOrDefault();
+            return Ok(audio.Subtitle);
         }
     }
 }

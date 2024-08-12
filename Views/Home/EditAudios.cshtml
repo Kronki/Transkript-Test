@@ -1,0 +1,263 @@
+﻿@model List<AudioFileAndSubtitle>
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    var host = HttpContextAccessor.HttpContext.Request.Host.ToString();
+    var scheme = HttpContextAccessor.HttpContext.Request.Scheme;
+    var subtitleUrl = $"{scheme}://{host}/Subtitles";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio with Subtitles</title>
+    <style>
+        #subtitleDisplay {
+            position: absolute;
+            bottom: 20px;
+            width: 90%;
+            text-align: center;
+            font-size: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    @foreach (var item in Model)
+    {
+        <div class="d-flex gap-3 mt-3">
+            <audio onplay="loadSubtitles('@subtitleUrl/@item.Subtitles[0].Path', this, 'audio')" id="audioPlayer" controls>
+                <source src="~/Audios/@item.FilePath" type="audio/mpeg" />
+            </audio>
+            <input type="checkbox" checked onchange="checkSubs(this, '@subtitleUrl/@item.Subtitles[0].Path')" />
+            <div class="d-flex gap-2">
+                @* <button class="btn btn-primary" onclick="loadSubtitles('@subtitleUrl/Sub1.vtt')">Load Subtitles</button> *@
+                @if(item.Subtitles != null && item.Subtitles.Count > 0)
+                {
+                    <button class="btn btn-secondary" onclick="editSubtitles('@subtitleUrl/@item.Subtitles[0].Path')">Edit Subtitles</button>
+                }
+            </div>
+        </div>
+    }
+    <div id="subtitle-container">
+        <div id="subtitle-area">
+        </div>
+    </div>
+    <div class="mt-3">
+        <button class="btn btn-success" onclick="encodeSubtitles()">Save Changes</button>
+    </div>
+    <div style="margin-top: 200px;">
+
+        <div id="subtitleDisplay"></div>
+    </div>
+    <script asp-append-version="true" src="~/js/subtitles.js"></script>
+    <script>
+        var subtitles = "";
+        var timeStamps = "";
+
+        function checkSubs(target, url) {
+            if(!target.checked) {
+                const subtitleDisplay = document.getElementById('subtitleDisplay');
+                subtitleDisplay.innerText = '';
+            }
+            else {
+                loadSubtitles(url, target.parentElement.children[0], "checkbox");
+            }
+        }
+
+        function loadSubtitles(url, target, origin) {
+            var checkBox = target.parentElement.children[1]
+            if (!checkBox.checked)
+                return;
+            fetch(url)
+                .then(response => response.text())
+                .then(text => {
+                    const cues = parseVTT(text);
+                    displaySubtitles(cues, target, origin);
+                })
+                .catch(error => console.error('Error loading subtitles:', error));
+        }
+
+        function parseVTT(vttText) {
+            const lines = vttText.split('\n');
+            let cues = [];
+            let cue = null;
+
+            lines.forEach(line => {
+                if (line.includes('-->')) {
+                    if (cue) cues.push(cue);
+                    const [start, end] = line.split(' --> ');
+                    cue = { start: timeToSeconds(start), end: timeToSeconds(end), text: '' };
+                } else if (cue && line.trim()) {
+                    cue.text += line.trim() + '\n';
+                }
+            });
+
+            if (cue) cues.push(cue);
+            return cues;
+        }
+
+        // function timeToSeconds(time) {
+        //     const parts = time.split(':');
+        //     const seconds = parseFloat(parts[2]);
+        //     const minutes = parseInt(parts[1], 10);
+        //     const hours = parseInt(parts[0], 10);
+        //     return seconds + (minutes * 60) + (hours * 3600);
+        // }
+
+        function displaySubtitles(cues, target, origin) {
+            const subtitleDisplay = document.getElementById('subtitleDisplay');
+
+            if(origin === "checkbox") {
+                const currentTime = target.currentTime;
+                const currentCue = cues.find(cue => currentTime >= cue.start && currentTime <= cue.end);
+
+                if (currentCue) {
+                    subtitleDisplay.innerText = currentCue.text;
+                } else {
+                    subtitleDisplay.innerText = '';
+                }
+            }
+
+            target.addEventListener('timeupdate', () => {
+                const currentTime = target.currentTime;
+                const currentCue = cues.find(cue => currentTime >= cue.start && currentTime <= cue.end);
+
+                if (currentCue) {
+                    subtitleDisplay.innerText = currentCue.text;
+                } else {
+                    subtitleDisplay.innerText = '';
+                }
+            });
+        }
+
+        function editSubtitles(url) {
+            var language = localStorage.getItem('language');
+            fetch(url)
+                .then(response => response.text())
+                .then(text => {
+                    subtitles = extractSubtitles(text);
+                    timeStamps = convertSecondsToTimeFormat(extractTimestamps(text))
+                    showCorrectSubs();
+
+                    const cues = parseVTT(text);
+                })
+                .catch(error => console.error('Error loading subtitles:', error));
+        }
+
+        function showCorrectSubs() {
+            var subtitleContainer = document.getElementById("subtitle-area");
+            subtitleContainer.innerHTML = '';
+            subtitles.forEach((s, i) => {
+                const subtitleDiv = document.createElement("div");
+                subtitleDiv.className = "mt-3 subtitle-editor";
+                const textArea = document.createElement('textarea');
+                textArea.className = "subtitle-text";
+                textArea.setAttribute("rows", "3");
+                textArea.setAttribute("cols", "49");
+                textArea.innerText = s;
+                const timeInputs = document.createElement("div");
+                timeInputs.className = "time-inputs";
+                const firstInput = document.createElement("input");
+                firstInput.value = timeStamps[2 * i];
+                firstInput.setAttribute("placeholder", "00:00:00");
+                firstInput.className = "first-input";
+                const secondInput = document.createElement("input");
+                secondInput.value = timeStamps[(2 * i) + 1];
+                secondInput.setAttribute("placeholder", "00:00:05")
+                secondInput.className = "second-input";
+
+                firstInput.onchange = function (event) {
+                    validateTime(event);
+                };
+
+                secondInput.onchange = function (event) {
+                    validateTime(event);
+                }
+
+                timeInputs.appendChild(firstInput);
+                timeInputs.appendChild(secondInput);
+
+                subtitleDiv.appendChild(textArea);
+                subtitleDiv.appendChild(timeInputs);
+                subtitleContainer.appendChild(subtitleDiv);
+            });
+
+            var editorDivs = document.getElementsByClassName("subtitle-editor");
+            var lastDiv = Array.from(editorDivs).at(-1);
+            var newButton = document.createElement('button');
+            newButton.id = 'add-section';
+            newButton.onclick = addSubtitleSection;
+            newButton.innerText = "Shto";
+            newButton.className = "btn btn-primary";
+            lastDiv.appendChild(newButton);
+            var subtitleInnerContainer = document.getElementById("subtitle-container");
+            var deleteButton = document.getElementById("remove-button");
+            if (!deleteButton) {
+                var newButton = document.createElement("button");
+                newButton.innerText = "Fshij";
+                newButton.id = "remove-button";
+                newButton.className = "mt-3 btn btn-secondary";
+                newButton.onclick = function (event) {
+                    removeLast();
+                }
+                subtitleInnerContainer.appendChild(newButton);
+            }
+        }
+
+        function extractSubtitles(subtitleString) {
+            // Remove "WEBVTT"
+            let cleanedString = subtitleString.replace(/WEBVTT/g, '');
+
+            // Use a regular expression to split by timestamps
+            let lines = cleanedString.split(/\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/)
+                .map(line => line.replace(/^\d+/, '').replace(/\d+$/, '').trim())  // Remove leading/trailing numbers and trim whitespace
+                .filter(line => line.length > 0);  // Filter out empty strings
+
+
+            return lines;
+        }
+
+        function extractTimestamps(subtitleString) {
+            // Regular expression to match timestamps
+            console.log(subtitleString);
+            const timestampRegex = /\d{2}:\d{2}:\d{2}\.\d{3}/g;
+
+            // Extract timestamps
+            const timestamps = subtitleString.match(timestampRegex);
+
+            if (!timestamps) return [];
+
+            // Convert timestamps to seconds
+            const timestampsInSeconds = timestamps.map(timestamp => {
+                const [hours, minutes, seconds] = timestamp.split(':');
+                const [secs, millis] = seconds.split('.');
+                return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(secs) + parseInt(millis) / 1000;
+            });
+
+            return timestampsInSeconds;
+        }
+
+        function convertSecondsToTimeFormat(secondsArray) {
+            return secondsArray.map(seconds => {
+                // Calculate hours, minutes, and seconds
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = Math.floor(seconds % 60);
+
+                // Format as hh:mm:ss with leading zeros
+                return [
+                    hours.toString().padStart(2, '0'),
+                    minutes.toString().padStart(2, '0'),
+                    secs.toString().padStart(2, '0')
+                ].join(':');
+            });
+        }
+
+    </script>
+</body>
+</html>

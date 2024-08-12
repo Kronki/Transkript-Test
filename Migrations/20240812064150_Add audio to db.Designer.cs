@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TranskriptTest.Data;
 
@@ -11,9 +12,11 @@ using TranskriptTest.Data;
 namespace TranskriptTest.Migrations
 {
     [DbContext(typeof(VideoDbContext))]
-    partial class VideoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240812064150_Add audio to db")]
+    partial class Addaudiotodb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,21 +52,22 @@ namespace TranskriptTest.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AudioFileId")
+                    b.Property<int>("AudioFileId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Language")
+                    b.Property<string>("Path")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Path")
-                        .HasColumnType("longtext");
-
-                    b.Property<int?>("VideoId")
+                    b.Property<int>("VideoId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -83,19 +87,18 @@ namespace TranskriptTest.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<int?>("SubtitleId")
                         .HasColumnType("int");
 
                     b.Property<string>("TextTrackContent")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("TextTrackId")
+                    b.Property<int>("TextTrackId")
                         .HasColumnType("int");
 
                     b.Property<string>("TextTrackUri")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");
@@ -130,11 +133,15 @@ namespace TranskriptTest.Migrations
                 {
                     b.HasOne("TranskriptTest.Models.AudioFile", "AudioFile")
                         .WithMany("Subtitle")
-                        .HasForeignKey("AudioFileId");
+                        .HasForeignKey("AudioFileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("TranskriptTest.Models.Video", "Video")
                         .WithMany("Subtitles")
-                        .HasForeignKey("VideoId");
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("AudioFile");
 

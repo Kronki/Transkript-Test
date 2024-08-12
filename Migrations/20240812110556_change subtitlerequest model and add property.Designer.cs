@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TranskriptTest.Data;
 
@@ -11,9 +12,11 @@ using TranskriptTest.Data;
 namespace TranskriptTest.Migrations
 {
     [DbContext(typeof(VideoDbContext))]
-    partial class VideoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240812110556_change subtitlerequest model and add property")]
+    partial class changesubtitlerequestmodelandaddproperty
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,6 +55,10 @@ namespace TranskriptTest.Migrations
                     b.Property<int?>("AudioFileId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -61,6 +68,7 @@ namespace TranskriptTest.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("Path")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int?>("VideoId")

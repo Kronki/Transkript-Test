@@ -18,7 +18,7 @@
     var subtitles = "";
     var timeStamps = "";
     function getSubsFromDb(textTrackId) {
-        fetch(`/Home/GetSubsFromDb?textTrackId=${textTrackId}`)
+        fetch(`/Home/GetVideoSubsFromDb?textTrackId=${textTrackId}`)
         .then(response => response.text())
         .then((response) => {
            subtitles = extractSubtitles(response);

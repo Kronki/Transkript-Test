@@ -1,10 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TranskriptTest.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+    options.JsonSerializerOptions.WriteIndented = true; // Optional: for better readability in debugging
+});
 var connectionString = builder.Configuration.GetConnectionString("Dev");
 builder.Services.AddDbContext<VideoDbContext>(opt =>
 {

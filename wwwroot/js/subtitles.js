@@ -43,6 +43,7 @@
     newButton.id = 'add-section';
     newButton.onclick = addSubtitleSection;
     newButton.innerText = "Shto";
+    newButton.className = "btn btn-primary";
 
     newDiv.appendChild(newArea);
     newDiv.appendChild(newTimeInputsDiv);
@@ -63,6 +64,7 @@ const removeLast = () => {
     newButton.id = 'add-section';
     newButton.onclick = addSubtitleSection;
     newButton.innerText = "Shto";
+    newButton.className = "btn btn-primary";
 
     var lastSubtitle = Array.from(subtitles).at(-1);
     lastSubtitle.appendChild(newButton);

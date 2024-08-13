@@ -56,8 +56,8 @@
             <div id="transcriptContainer">
                 <div class="textContainer d-flex gap-2 align-items-center">
                     <div>
-                        <input onchange="validateTime(event); validateSameDivInput(event)" class="timeInput" placeholder="00:00:00" value="00:00:00" />
-                        <input onchange="validateTime(event); validateSameDivInput(event)" class="timeInput" placeholder="00:00:00" value="00:00:00"/>
+                        <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00" />
+                        <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00" />
                     </div>
                     <textarea cols="40" rows="3"></textarea>
                 </div>
@@ -109,8 +109,8 @@
                 newDiv.className = "textContainer d-flex gap-2 align-items-center";
                 newDiv.innerHTML = `
                                                        <div>
-                                    <input onchange="validateTime(event); validateSameDivInput(event)" class="timeInput" placeholder="00:00:00" value="00:00:00"/>
-                                    <input onchange="validateTime(event); validateSameDivInput(event)" class="timeInput" placeholder="00:00:00" value="00:00:00"/>
+                                    <input onchange="validateTime(event); validateSameDivInput(event); validateInputs(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00"/>
+                                    <input onchange="validateTime(event); validateSameDivInput(event); validateInputs(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00"/>
                                 </div>
                                 <textarea cols="40" rows="3"></textarea>
                             `;
@@ -121,15 +121,28 @@
             function validateSameDivInput(event) {
                 var parent = event.target.parentElement;
                 if (timeToSeconds(parent.children[0].value) > timeToSeconds(parent.children[1].value)) {
-                    console.log("wrong");
+                    event.target.value = '00:00:00';
                 }
             }
 
             function validateInputs(event) {
-
+                var previousInputDiv = event.target.parentElement.parentElement.previousSibling.previousSibling.children[0];
+                var thisInput = event.target;
+                if ((timeToSeconds(thisInput.value) < timeToSeconds(previousInputDiv.children[0].value)) || (timeToSeconds(thisInput.value) < timeToSeconds(previousInputDiv.children[1].value))) {
+                    thisInput.value = previousInputDiv.children[1].value;
+                }
             }
 
-
+            function validateFirstInputs(event) {
+                var nextInputDiv = event.target.parentElement.parentElement.nextSibling.nextSibling.children[0];
+                var thisInput = event.target;
+                if (nextInputDiv.id === "addContainer") {
+                    return;
+                }
+                if ((timeToSeconds(thisInput.value) > timeToSeconds(nextInputDiv.children[0].value)) || (timeToSeconds(thisInput.value) > timeToSeconds(nextInputDiv.children[1].value))) {
+                    thisInput.value = '00:00:00';
+                }
+            }
 
             var accessToken = "0bdb22134b168497f1f3ba85fe2beab5";
             var subtitleUploadLink = "";

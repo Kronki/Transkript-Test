@@ -1,0 +1,10 @@
+﻿@model AudioFileRequest;
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<form asp-action="Vimeo" asp-controller="Home" enctype="multipart/form-data">
+    <input class="form-control" type="file" asp-for="File"/>
+    <button class="btn btn-primary mt-3">Ruaj te dhenat</button>
+</form>

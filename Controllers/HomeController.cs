@@ -9,6 +9,10 @@ using System.IO;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
+using VimeoDotNet;
+using Newtonsoft.Json;
+using TranskriptTest.Models.VimeoClasses;
+using VimeoDotNet.Net;
 
 namespace TranskriptTest.Controllers
 {
@@ -18,11 +22,69 @@ namespace TranskriptTest.Controllers
         private readonly VideoDbContext _db;
         private readonly IWebHostEnvironment _env;
 
+        string accessToken = "0bdb22134b168497f1f3ba85fe2beab5";
+
         public HomeController(ILogger<HomeController> logger, VideoDbContext db, IWebHostEnvironment env)
         {
             _logger = logger;
             _db = db;
             _env = env;
+        }
+        public async Task<IActionResult> Vimeo()
+        {
+            return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> Vimeo(IFormFile file)
+        {
+            var uploadStatus = "";
+            try
+            {
+                VimeoClient vimeoClient = new VimeoClient(accessToken);
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+                var response = await httpClient.GetAsync("https://api.vimeo.com/me");
+                var jsonString = await response.Content.ReadAsStringAsync();
+
+                var guidId = Guid.NewGuid().ToString();
+                var fileName = "AccountInfo" + guidId + ".txt";
+                var filePath = Path.Combine(_env.WebRootPath, "VimeoInfo", fileName);
+                //await System.IO.File.WriteAllTextAsync(filePath, jsonString);
+
+                var accountInfo = JsonConvert.DeserializeObject<CustomVimeoUser>(jsonString);
+
+                if(accountInfo.Name != null)
+                {
+                    IUploadRequest uploadRequest = new UploadRequest();
+                    BinaryContent binaryContent = new BinaryContent(file.OpenReadStream(), file.ContentType);
+                    var chunkSize = 0L;
+                    var temp1 = file.Length / 1024;
+
+                    if(temp1 > 1)
+                    {
+                        chunkSize = temp1 / 1024;
+                        chunkSize *= 1048576;
+                    }
+                    else
+                    {
+                        chunkSize = 1048576;//chunk size equal to 1MB
+                    }
+
+                    uploadRequest = await vimeoClient.UploadEntireFileAsync(binaryContent, chunkSize, null);
+                    uploadStatus = string.Concat("File uploaded ", "https://vimeo.com/", uploadRequest.ClipId.Value.ToString(), "/none");
+                }
+                
+
+                
+                var authCheck = await vimeoClient.GetAccountInformationAsync();
+            }
+            catch(Exception ex)
+            {
+                uploadStatus = "not uploaded: " + ex.Message;
+            }
+
+            return View();
         }
 
         public async Task<IActionResult> Index()

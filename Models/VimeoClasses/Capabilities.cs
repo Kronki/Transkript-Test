@@ -1,0 +1,10 @@
+﻿namespace TranskriptTest.Models.VimeoClasses
+{
+    public class Capabilities
+    {
+        public bool HasLiveSubscription { get; set; }
+        public bool HasEnterpriseLihp { get; set; }
+        public bool HasSvvTimecodedComments { get; set; }
+        public bool HasSimplifiedEnterpriseAccount { get; set; }
+    }
+}

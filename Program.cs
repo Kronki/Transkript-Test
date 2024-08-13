@@ -9,7 +9,9 @@ builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
     options.JsonSerializerOptions.WriteIndented = true; // Optional: for better readability in debugging
-});
+}).AddNewtonsoftJson(options =>
+                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+            );
 var connectionString = builder.Configuration.GetConnectionString("Dev");
 builder.Services.AddDbContext<VideoDbContext>(opt =>
 {

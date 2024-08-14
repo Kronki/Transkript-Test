@@ -14,7 +14,7 @@ namespace TranskriptTest.Data
         public DbSet<Subtitle> Subtitles { get; set; }
         public DbSet<SubtitleRequest> SubtitleRequests { get; set; }
         public DbSet<AudioFile> AudioFiles { get; set; }
-
+        public DbSet<Transcript> Transcripts { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

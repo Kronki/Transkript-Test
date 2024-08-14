@@ -26,6 +26,7 @@
             text-align: center;
             padding: 5px;
         }
+
         #transcriptContainer {
             overflow: scroll;
             width: 50%;
@@ -33,6 +34,7 @@
             border: 1px solid black;
             padding: 10px;
         }
+
         .timeInput {
             height: 30px;
             width: 80px;
@@ -55,65 +57,122 @@
             </div>
             <div id="transcriptContainer">
                 <div class="textContainer d-flex gap-2 align-items-center">
-                    <div>
+                    <div class="time-input">
                         <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00" />
                         <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00" />
                     </div>
-                    <textarea cols="40" rows="3"></textarea>
+                    <textarea class="text-input" cols="40" rows="3"></textarea>
                 </div>
                 <div id="addContainer">
-                    <button onclick="addTranscript()" class="mt-2 btn btn-primary w-50 center">Shto</button>
+                    <button onclick="addTranscript(event)" class="mt-2 btn btn-primary w-50 center">Shto</button>
                 </div>
             </div>
         </div>
-        <div class="d-flex gap-3">
-            <button class="btn btn-primary" onclick="setLower()">Lower</button>
-            <button class="btn btn-primary" onclick="setHigher()">Higher</button>
+        <div class="mt-3">
+            <button class="btn btn-success" onclick="saveChanges()">Ruaj</button>
         </div>
 
-        <div class="mt-3 d-flex gap-2" id="inputs">
-            <input />
-            <input />
-            <input />
-            <input />
-            <input />
-        </div>
-        <div>
-            <button onclick="getVimeoURI()">First Step</button>
-        </div>
-        <div id="subtitle-area">
-            <div class="mt-3 subtitle-editor">
-                <textarea class="subtitle-text" rows="3" cols="49"></textarea>
-                <div class="time-inputs">
-                    <input onchange="validateTime(event)" value="00:00:01" placeholder="00:00:01" />
-                    <input onchange="validateTime(event)" value="00:00:05" placeholder="00:00:05" />
-                </div>
-                <button id="add-section" onclick="addSubtitleSection()">Shto</button>
+        <div class="d-none">
+            <div class="d-flex gap-3">
+                <button class="btn btn-primary" onclick="setLower()">Lower</button>
+                <button class="btn btn-primary" onclick="setHigher()">Higher</button>
             </div>
-        </div>
-        <div class="mt-2">
-            <button onclick="removeLast()">Fshij</button>
+
+            <div class="mt-3 d-flex gap-2" id="inputs">
+                <input />
+                <input />
+                <input />
+                <input />
+                <input />
+            </div>
+            <div>
+                <button onclick="getVimeoURI()">First Step</button>
+            </div>
+            <div id="subtitle-area">
+                <div class="mt-3 subtitle-editor">
+                    <textarea class="subtitle-text" rows="3" cols="49"></textarea>
+                    <div class="time-inputs">
+                        <input onchange="validateTime(event)" value="00:00:01" placeholder="00:00:01" />
+                        <input onchange="validateTime(event)" value="00:00:05" placeholder="00:00:05" />
+                    </div>
+                    <button id="add-section" onclick="addSubtitleSection()">Shto</button>
+                </div>
+            </div>
+            <div class="mt-2">
+                <button onclick="removeLast()">Fshij</button>
+            </div>
+
+            <button class="mt-3" id="save-button">Save Subtitles</button>
+            <button class="mt-3" onclick="activateSubtitles()">Activate Subtitles</button>
+            <button class="mt-3" onclick="getURITracks()">Get Track URI</button>
         </div>
 
-        <button class="mt-3" id="save-button">Save Subtitles</button>
-        <button class="mt-3" onclick="activateSubtitles()">Activate Subtitles</button>
-        <button class="mt-3" onclick="getURITracks()">Get Track URI</button>
     </div>
     @section scripts {
         <script>
+            var iframe = document.querySelector('iframe');
+            var videoId = getVimeoId(iframe.src);
 
-            function addTranscript() {
-                var lastDiv = Array.from(document.getElementsByClassName("textContainer")).at(-1);
+            function saveChanges() {
+                var subtitles = 'WEBVTT\n\n';
+                var textInputs = document.getElementsByClassName('text-input');
+                var timeInputs = document.getElementsByClassName('time-input');
+                var firstTimeArray = [];
+                var secondTimeArray = [];
+                var textArray = [];
+                [...textInputs].forEach((e, i) => {
+                    firstTimeArray.push(timeToSeconds(timeInputs[i].children[0].value));
+                    secondTimeArray.push(timeToSeconds(timeInputs[i].children[1].value));
+                    textArray.push(e.value);
+                    subtitles += `${i + 1}\n`;
+                    subtitles += `${timeInputs[i].children[0].value}.000 --> ${timeInputs[i].children[1].value}.000\n`;
+                    subtitles += `${e.value}\n\n`;
+                });
+                var encodedSubtitles = encodeURIComponent(subtitles);
+                var formData = new FormData();
+                firstTimeArray.forEach((time) => formData.append('FirstTimes', time));
+                secondTimeArray.forEach((time) => formData.append('SecondTimes', time));
+                textArray.forEach((text) => formData.append('Texts', text));
+                fetch(`VideoFrame?videoId=${videoId}`, {
+                    method: "POST",
+                    body: formData
+                }).then((response) => {
+                    console.log("success", response);
+                }).catch((err) => {
+                    console.log("err", err);
+                })
+            }
+
+            function addTranscript(event) {
+                var textContainers = document.getElementsByClassName('textContainer');
+                var lastDiv = Array.from(textContainers).at(-1);
+                var firstInput = lastDiv.children[0].children[0];
+                var secondInput = lastDiv.children[0].children[1];
+                if (firstInput.value == secondInput.value) {
+                    return;
+                }
+                if (lastDiv.previousSibling.previousSibling != null) {
+                    var previousFirstInput = lastDiv.previousSibling.previousSibling.children[0].children[0];
+                    var previousSecondInput = lastDiv.previousSibling.previousSibling.children[0].children[1];
+                    var firstCheck = timeToSeconds(firstInput.value) < timeToSeconds(previousFirstInput.value) || timeToSeconds(firstInput.value) < timeToSeconds(previousSecondInput.value);
+                    var secondCheck = timeToSeconds(secondInput.value) < timeToSeconds(previousFirstInput.value) || timeToSeconds(secondInput.value) < timeToSeconds(previousSecondInput.value);
+                    if (firstCheck || secondCheck) {
+                        return;
+                    }
+                }
+                if (timeToSeconds(firstInput.value) == 0 && timeToSeconds(secondInput.value) == 0) {
+                    return;
+                }
                 var newDiv = document.createElement("div");
                 var hr = document.createElement("hr");
                 newDiv.className = "textContainer d-flex gap-2 align-items-center";
                 newDiv.innerHTML = `
-                                                       <div>
-                                    <input onchange="validateTime(event); validateSameDivInput(event); validateInputs(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00"/>
-                                    <input onchange="validateTime(event); validateSameDivInput(event); validateInputs(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00"/>
-                                </div>
-                                <textarea cols="40" rows="3"></textarea>
-                            `;
+                                                                               <div class="time-input">
+                                                            <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="${secondInput.value}" />
+                                                            <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="${secondInput.value}" />
+                                            </div>
+                                            <textarea class="text-input" cols="40" rows="3"></textarea>
+                                        `;
                 lastDiv.parentNode.insertBefore(hr, lastDiv.nextSibling);
                 hr.parentNode.insertBefore(newDiv, hr.nextSibling);
             }
@@ -135,20 +194,23 @@
 
             function validateFirstInputs(event) {
                 var nextInputDiv = event.target.parentElement.parentElement.nextSibling.nextSibling.children[0];
+                console.log(nextInputDiv.nodeName);
                 var thisInput = event.target;
-                if (nextInputDiv.id === "addContainer") {
+                if (nextInputDiv.id === "addContainer" || nextInputDiv.nodeName == "BUTTON") {
                     return;
                 }
-                if ((timeToSeconds(thisInput.value) > timeToSeconds(nextInputDiv.children[0].value)) || (timeToSeconds(thisInput.value) > timeToSeconds(nextInputDiv.children[1].value))) {
-                    thisInput.value = '00:00:00';
+                else {
+                    if ((timeToSeconds(thisInput.value) > timeToSeconds(nextInputDiv.children[0].value)) || (timeToSeconds(thisInput.value) > timeToSeconds(nextInputDiv.children[1].value))) {
+                        console.log("test");
+                        thisInput.value = '00:00:00';
+                    }
                 }
+
             }
 
             var accessToken = "0bdb22134b168497f1f3ba85fe2beab5";
             var subtitleUploadLink = "";
             var textTrackURI = "";
-            var iframe = document.querySelector('iframe');
-            var videoId = getVimeoId(iframe.src);
             var scale = 10;
             var multiplier = 1;
             // getVimeoURI();
@@ -172,7 +234,7 @@
                     var sectionTime = parseFloat(duration / 5);
                     // var before = sectionTime.toString().split(".")[0];
                     var after = sectionTime.toString().split(".")[1];
-                    if(after) {
+                    if (after) {
                         sum += parseFloat(after);
                         if (i === 4) {
                             sectionTime += sum / 10;
@@ -194,7 +256,7 @@
                 adjustScale(false);
                 // scale += 3;
                 // newArray = [];
-                
+
                 // player.getDuration().then((duration) => {
                 //     var viewScale = (duration / scale).toFixed(2);
                 //     console.log(viewScale);
@@ -501,7 +563,7 @@
                     body: subtitles
                 }).then((response) => {
                     saveTextTrackToDb(subtitles, link, textTrackURI, id);
-                    })
+                })
                     .catch((err) => {
                         console.log("err", err);
                     })
@@ -512,10 +574,10 @@
                 fetch(`/Home/SaveTextTrackToDb?content=${content}&link=${link}&uri=${uri}&id=${id}`, {
                     method: "POST",
                 })
-                .then(response => response.json())
-                .then((response) => {
-                    console.log("Saved to db", response);
-                })
+                    .then(response => response.json())
+                    .then((response) => {
+                        console.log("Saved to db", response);
+                    })
             }
 
             //function to activate the subtitles that were created
@@ -531,13 +593,13 @@
                         "active": true,
                     }
                 })
-                .then(response => response.json())
-                .then((response) => {
-                    console.log(response);
-                })
-                .catch((err) => {
-                    console.log("err", err);
-                })
+                    .then(response => response.json())
+                    .then((response) => {
+                        console.log(response);
+                    })
+                    .catch((err) => {
+                        console.log("err", err);
+                    })
             }
 
             //function to retrieve all textTracks tied to that video
@@ -549,13 +611,13 @@
                         "Accept": "application/vnd.vimeo.*+json;version=3.4",
                     },
                 })
-                .then(response => response.json())
-                .then((response) => {
-                    console.log("track got", response);
-                    response.data.forEach((e, i) => {
-                        console.log(e);
+                    .then(response => response.json())
+                    .then((response) => {
+                        console.log("track got", response);
+                        response.data.forEach((e, i) => {
+                            console.log(e);
+                        })
                     })
-                })
             }
 
             //function that accepts the time in seconds and returns it as a hh:mm:ss format

@@ -354,5 +354,22 @@ namespace TranskriptTest.Controllers
             var audio = _db.AudioFiles.Include(x=>x.Subtitle).Where(x=>x.Id == audioId).FirstOrDefault();
             return Ok(audio.Subtitle);
         }
+        [HttpPost]
+        public IActionResult VideoFrame([FromForm] SubtitleFormDTO model, [FromQuery]int videoId)
+        {
+            for(int i = 0; i < model.FirstTimes.Count; i++)
+            {
+                var transcript = new Transcript()
+                {
+                    StartTime = model.FirstTimes[i],
+                    EndTime = model.SecondTimes[i],
+                    Text = model.Texts[i],
+                    VideoId = videoId,
+                };
+                _db.Transcripts.Add(transcript);
+            }
+            var isSaved = _db.SaveChanges();
+            return Ok(isSaved >= 1);
+        }
     }
 }

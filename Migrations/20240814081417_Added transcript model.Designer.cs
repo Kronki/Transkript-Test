@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TranskriptTest.Data;
 
@@ -11,9 +12,11 @@ using TranskriptTest.Data;
 namespace TranskriptTest.Migrations
 {
     [DbContext(typeof(VideoDbContext))]
-    partial class VideoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240814081417_Added transcript model")]
+    partial class Addedtranscriptmodel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -128,6 +131,8 @@ namespace TranskriptTest.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("VideoId");
+
                     b.ToTable("Transcripts");
                 });
 
@@ -174,6 +179,15 @@ namespace TranskriptTest.Migrations
                         .HasForeignKey("SubtitleId");
 
                     b.Navigation("Subtitle");
+                });
+
+            modelBuilder.Entity("TranskriptTest.Models.Transcript", b =>
+                {
+                    b.HasOne("TranskriptTest.Models.Video", "Video")
+                        .WithMany()
+                        .HasForeignKey("VideoId");
+
+                    b.Navigation("Video");
                 });
 
             modelBuilder.Entity("TranskriptTest.Models.AudioFile", b =>

@@ -53,7 +53,7 @@
         <div class="d-flex gap-3 align-items-center">
             <iframe src="https://player.vimeo.com/video/990565046?title=0&amp;byline=0&amp;portrait=0&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="789" height="444" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write" title="Test"></iframe>
             <div>
-                <button class="btn btn-primary">Edito</button>
+                <button onclick="goToEdit()" class="btn btn-primary">Edito</button>
             </div>
             <div id="transcriptContainer">
                 <div class="textContainer d-flex gap-2 align-items-center">
@@ -112,6 +112,12 @@
         <script>
             var iframe = document.querySelector('iframe');
             var videoId = getVimeoId(iframe.src);
+
+
+            function goToEdit() {
+                window.location.replace(`/Home/EditVideoFrame?videoId=${videoId}`);
+            }
+
 
             function saveChanges() {
                 var subtitles = 'WEBVTT\n\n';

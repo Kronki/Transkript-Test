@@ -371,5 +371,10 @@ namespace TranskriptTest.Controllers
             var isSaved = _db.SaveChanges();
             return Ok(isSaved >= 1);
         }
+        public IActionResult EditVideoFrame(int videoId)
+        {
+            var transcripts = _db.Transcripts.Where(x => x.VideoId == videoId).ToList();
+            return View(transcripts);
+        }
     }
 }

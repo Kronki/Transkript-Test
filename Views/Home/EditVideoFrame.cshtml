@@ -1,0 +1,241 @@
+﻿@model List<Transcript>
+
+<head>
+    <style>
+        /* Right-side subtitles */
+        #subtitleContainer {
+            position: relative;
+            width: 789px;
+            height: 444px;
+        }
+
+        .subtitles {
+            border: 1px solid gray;
+            border-radius: 12px;
+            background-color: #212121;
+            width: 50%;
+        }
+
+        .subtitleList {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+        }
+
+            .subtitleList:hover {
+                cursor: pointer;
+                background-color: #383838;
+            }
+
+            .subtitleList.active {
+                background-color: #383838; /* Highlight color for the active subtitle */
+                color: white; /* Optional: change text color for better contrast */
+            }
+        .subtitleText {
+            color: #ffb735;
+        }
+
+        .subtitleTextContainer {
+            background-color: #273850;
+            height: 20px;
+            width: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+        }
+
+        .subtitleHeader {
+            padding: 16px;
+        }
+
+        .subtitleContent {
+            height: 400px;
+            overflow-y: scroll;
+            padding-bottom: 16px;
+        }
+
+            /* Custom scrollbar styles */
+            .subtitleContent::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .subtitleContent::-webkit-scrollbar-thumb {
+                background-color: #e6a530;
+                border-radius: 12px;
+            }
+
+                .subtitleContent::-webkit-scrollbar-thumb:hover {
+                    background-color: #ffbe49;
+                }
+
+            .subtitleContent::-webkit-scrollbar-track {
+                background-color: #212121;
+                border-radius: 0px 0px 12px 0px;
+            }
+
+        /* Bottom subtitles */
+        #subtitleDisplay {
+            position: absolute;
+            bottom: 20px;
+            width: 90%;
+            text-align: center;
+            font-size: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+    <script src="https://player.vimeo.com/api/player.js"></script>
+</head>
+
+<body>
+    <div class="w-100" id="subtitleContainer">
+        <div class="d-flex gap-3 align-items-center">
+            <iframe src="https://player.vimeo.com/video/990565046?title=0&amp;byline=0&amp;portrait=0&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="789" height="444" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write" title="Test"></iframe>
+            <div class="subtitles">
+                <div class="subtitleHeader">
+                    <h3 class="text-white">Transcript</h3>
+                </div>
+                <div class="subtitleContent">
+                    @foreach (var item in Model)
+                    {
+                        <div onclick="goToTime(@item.StartTime)" class="subtitleList">
+                            <div class="subtitleTextContainer">
+                                <span class="subtitleText fw-bold">
+                                    @{
+                                        TimeSpan timeSpan = TimeSpan.FromSeconds(item.StartTime);
+                                        string formattedTime;
+
+                                        if (timeSpan.Hours > 0)
+                                        {
+                                            formattedTime = string.Format("{0:D1}:{1:D2}:{2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds);
+                                        }
+                                        else
+                                        {
+                                            formattedTime = string.Format("{0:D1}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
+                                        }
+                                    }
+                                    @formattedTime
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-white">@item.Text</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="subtitleDisplay"></div>
+    <script>
+        var iframe = document.querySelector('iframe');
+        var player = new Vimeo.Player(iframe);
+        var subtitles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model));
+        var isManualScroll = false; // Flag to control if scrolling should be manual
+
+        function updateSubtitles(currentTime) {
+            // Remove the 'active' class from all subtitle list items
+            document.querySelectorAll('.subtitleList').forEach(el => el.classList.remove('active'));
+
+            // Find and update the current subtitle
+            const currentSubtitle = subtitles
+                .filter(sub => currentTime >= sub.StartTime)
+                .reduce((latest, sub) => (sub.EndTime > (latest ? latest.EndTime : 0) ? sub : latest), null);
+
+            if (currentSubtitle && currentTime <= currentSubtitle.EndTime) {
+                document.getElementById('subtitleDisplay').innerText = currentSubtitle.Text;
+
+                // Highlight the corresponding subtitle item
+                const subtitleItems = document.querySelectorAll('.subtitleList');
+                const index = subtitles.indexOf(currentSubtitle);
+                if (index !== -1) {
+                    const activeItem = subtitleItems[index];
+                    activeItem.classList.add('active');
+
+                    // Scroll the subtitle content container if needed
+                    if (!isManualScroll) {
+                        const container = document.querySelector('.subtitleContent');
+                        const containerTop = container.scrollTop;
+                        const containerHeight = container.clientHeight;
+                        const itemTop = activeItem.offsetTop;
+                        const itemHeight = activeItem.clientHeight;
+                        const itemBottom = itemTop + itemHeight;
+
+                        // Define the threshold for scrolling
+                        const threshold = containerHeight * 0.07; // Adjust this percentage as needed
+
+                        // Only scroll if the item is within the threshold
+                        if (itemBottom > containerTop + containerHeight - threshold) {
+                            const scrollToPosition = itemTop - containerHeight / 2 + itemHeight / 2;
+                            container.scrollTo({
+                                top: scrollToPosition,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                }
+            } else {
+                document.getElementById('subtitleDisplay').innerText = '';
+            }
+        }
+
+        function goToTime(time) {
+            isManualScroll = true; // Enable manual scrolling
+            player.setCurrentTime(time).then(() => {
+                updateSubtitles(time); // Update subtitles and highlight immediately after setting time
+            });
+            setTimeout(() => {
+                isManualScroll = false; // Re-enable automatic scrolling after a short delay
+            }, 500); // Adjust the delay as needed
+        }
+
+        function handleItemClick(event) {
+            isManualScroll = true; // Enable manual scrolling
+
+            const item = event.currentTarget;
+            const index = Array.from(item.parentNode.children).indexOf(item);
+            const itemTime = subtitles[index].StartTime;
+
+            player.setCurrentTime(itemTime).then(() => {
+                updateSubtitles(itemTime); // Update subtitles and highlight immediately after setting time
+            });
+
+            // Scroll the item to the middle of the container
+            const container = document.querySelector('.subtitleContent');
+            const containerHeight = container.clientHeight;
+            const itemTop = item.offsetTop;
+            const itemHeight = item.clientHeight;
+
+            // Scroll to make the item appear closer to the middle of the container
+            const scrollToPosition = itemTop - containerHeight / 2 + itemHeight / 2;
+            container.scrollTo({
+                top: scrollToPosition,
+                behavior: 'smooth'
+            });
+
+            setTimeout(() => {
+                isManualScroll = false; // Re-enable automatic scrolling after a short delay
+            }, 500); // Adjust the delay as needed
+        }
+
+        function displaySubtitles() {
+            player.on('timeupdate', function (data) {
+                const currentTime = data.seconds;
+                if (!isManualScroll) {
+                    updateSubtitles(currentTime);
+                }
+            });
+        }
+
+        // Add click event listeners to subtitle items
+        document.querySelectorAll('.subtitleList').forEach(item => {
+            item.addEventListener('click', handleItemClick);
+        });
+
+        displaySubtitles();
+    </script>
+</body>

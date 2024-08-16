@@ -33,6 +33,26 @@
             height: 400px;
             border: 1px solid black;
             padding: 10px;
+            background-color: #212121;
+        }
+
+        #transcriptContainer::-webkit-scrollbar {
+            width: 10px;
+        }
+
+
+        #transcriptContainer::-webkit-scrollbar-thumb {
+            background-color: #e6a530;
+            border-radius: 12px;
+        }
+
+        #transcriptContainer::-webkit-scrollbar-thumb:hover {
+            background-color: #ffbe49;
+        }
+
+        #transcriptContainer::-webkit-scrollbar-track {
+            background-color: #212121;
+            border-radius: 0px 0px 12px 0px;
         }
 
         .timeInput {
@@ -44,6 +64,37 @@
         #addContainer {
             display: flex;
             justify-content: center;
+        }
+
+        #myTextbox {
+            resize: none; /* Disables the resizing of the textbox */
+            overflow: auto; /* Ensures the scrollbar will appear if needed */
+            width: 100%; /* Set the width of the textbox */
+            height: 100px; /* Set the height of the textbox */
+            padding: 10px; /* Adds padding inside the textbox */
+            border: 1px solid #ccc; /* Adds a border around the textbox */
+            border-radius: 4px; /* Optional: Rounds the corners of the textbox */
+            font-family: Arial, sans-serif; /* Sets the font family */
+            font-size: 14px; /* Sets the font size */
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); /* Optional: Adds an inner shadow for a subtle 3D effect */
+        }
+
+        #myTextbox::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #myTextbox::-webkit-scrollbar-thumb {
+            background-color: #e6a530;
+            border-radius: 12px;
+        }
+
+        #myTextbox::-webkit-scrollbar-thumb:hover {
+            background-color: #ffbe49;
+        }
+
+        #myTextbox::-webkit-scrollbar-track {
+            background-color: #212121;
+            border-radius: 0px 0px 12px 0px;
         }
     </style>
     <script src="https://player.vimeo.com/api/player.js"></script>
@@ -61,7 +112,7 @@
                         <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00" />
                         <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="00:00:00" />
                     </div>
-                    <textarea class="text-input" cols="40" rows="3"></textarea>
+                    <textarea id="myTextbox" class="text-input" cols="40" rows="3"></textarea>
                 </div>
                 <div id="addContainer">
                     <button onclick="addTranscript(event)" class="mt-2 btn btn-primary w-50 center">Shto</button>
@@ -112,6 +163,7 @@
         <script>
             var iframe = document.querySelector('iframe');
             var videoId = getVimeoId(iframe.src);
+            var player = new Vimeo.Player(iframe);
 
 
             function goToEdit() {
@@ -120,7 +172,7 @@
 
 
             function saveChanges() {
-                var subtitles = 'WEBVTT\n\n';
+                // var subtitles = 'WEBVTT\n\n';
                 var textInputs = document.getElementsByClassName('text-input');
                 var timeInputs = document.getElementsByClassName('time-input');
                 var firstTimeArray = [];
@@ -130,23 +182,28 @@
                     firstTimeArray.push(timeToSeconds(timeInputs[i].children[0].value));
                     secondTimeArray.push(timeToSeconds(timeInputs[i].children[1].value));
                     textArray.push(e.value);
-                    subtitles += `${i + 1}\n`;
-                    subtitles += `${timeInputs[i].children[0].value}.000 --> ${timeInputs[i].children[1].value}.000\n`;
-                    subtitles += `${e.value}\n\n`;
+                    // subtitles += `${i + 1}\n`;
+                    // subtitles += `${timeInputs[i].children[0].value}.000 --> ${timeInputs[i].children[1].value}.000\n`;
+                    // subtitles += `${e.value}\n\n`;
                 });
-                var encodedSubtitles = encodeURIComponent(subtitles);
+                // var encodedSubtitles = encodeURIComponent(subtitles);
+                player.getDuration().then(function(duration) {
+                    if (Array.from(secondTimeArray).at(-1) > duration) {
+                        return;
+                    }
+                })
                 var formData = new FormData();
                 firstTimeArray.forEach((time) => formData.append('FirstTimes', time));
                 secondTimeArray.forEach((time) => formData.append('SecondTimes', time));
                 textArray.forEach((text) => formData.append('Texts', text));
-                fetch(`VideoFrame?videoId=${videoId}`, {
-                    method: "POST",
-                    body: formData
-                }).then((response) => {
-                    console.log("success", response);
-                }).catch((err) => {
-                    console.log("err", err);
-                })
+                // fetch(`VideoFrame?videoId=${videoId}`, {
+                //     method: "POST",
+                //     body: formData
+                // }).then((response) => {
+                //     console.log("success", response);
+                // }).catch((err) => {
+                //     console.log("err", err);
+                // })
             }
 
             function addTranscript(event) {
@@ -177,7 +234,7 @@
                                                             <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="${secondInput.value}" />
                                                             <input onchange="validateTime(event); validateSameDivInput(event); validateFirstInputs(event)" class="timeInput" placeholder="00:00:00" value="${secondInput.value}" />
                                             </div>
-                                            <textarea class="text-input" cols="40" rows="3"></textarea>
+                                            <textarea id="myTextbox"" class="text-input" cols="40" rows="3"></textarea>
                                         `;
                 lastDiv.parentNode.insertBefore(hr, lastDiv.nextSibling);
                 hr.parentNode.insertBefore(newDiv, hr.nextSibling);
@@ -220,7 +277,6 @@
             var scale = 10;
             var multiplier = 1;
             // getVimeoURI();
-            var player = new Vimeo.Player(iframe);
             // player.setVolume(0).then(() => { });
 
             // player.on('play', function () {

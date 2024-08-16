@@ -26,12 +26,15 @@
             .subtitleList:hover {
                 cursor: pointer;
                 background-color: #383838;
+                font-weight: 600;
             }
 
             .subtitleList.active {
                 background-color: #383838; /* Highlight color for the active subtitle */
                 color: white; /* Optional: change text color for better contrast */
+                font-weight:600;
             }
+
         .subtitleText {
             color: #ffb735;
         }
@@ -47,6 +50,9 @@
         }
 
         .subtitleHeader {
+            display:flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 16px;
         }
 
@@ -58,7 +64,7 @@
 
             /* Custom scrollbar styles */
             .subtitleContent::-webkit-scrollbar {
-                width: 8px;
+                width: 10px;
             }
 
             .subtitleContent::-webkit-scrollbar-thumb {
@@ -87,6 +93,87 @@
             padding: 10px;
             box-sizing: border-box;
         }
+
+        .editMenu {
+            width: 40px;
+            height: 40px;
+            display:flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border-radius: 50%;
+        }
+
+        .editMenu:hover {
+            cursor: pointer;
+        }
+
+        #editMenuContent {
+            position: absolute;
+            top: 13%;
+            right: 4%;
+            z-index: 10;
+            background-color: #212121;
+            padding: 15px 0;
+            border-radius: 4px;
+            box-shadow: 0px 0px 20px 5px #646464;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .editMenu:active {
+            background-color: #646464;
+        }
+
+        .editMenuItem {
+            color: white;
+            padding: 5px 25px;
+            margin: 0;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .editMenuItem:hover {
+            background-color: #383838;
+            cursor: pointer;
+        }
+
+        .customModal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        .customModal-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%; /* Could be more or less, depending on screen size */
+        }
+
+        .customModal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+            .customModal-close:hover,
+            .customModal-close:focus {
+                color: black;
+                text-decoration: none;
+                cursor: pointer;
+            }
     </style>
     <script src="https://player.vimeo.com/api/player.js"></script>
 </head>
@@ -98,11 +185,25 @@
             <div class="subtitles">
                 <div class="subtitleHeader">
                     <h3 class="text-white">Transcript</h3>
+                    <div onclick="toggleVisibility()" class="editMenu">
+                        <svg height="30px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512">
+                            <path fill="white" d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zM120 96A56 56 0 1 0 8 96a56 56 0 1 0 112 0z" />
+                        </svg>
+                    </div>
+                    <div id="editMenuContent" class="d-none">
+                        <p onclick="toggleTimeStamps(this)" class="editMenuItem">
+                            <svg width="20px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                                <path fill="white" d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z" />
+                            </svg>
+                            <span>Toggle timestamps</span>
+                        </p>
+                        <p onclick="showEdit()" class="editMenuItem text-center">Edit transcript</p>
+                    </div>
                 </div>
                 <div class="subtitleContent">
                     @foreach (var item in Model)
                     {
-                        <div onclick="goToTime(@item.StartTime)" class="subtitleList">
+                        <div onclick="goToTime(@item.StartTime, event, @item.Id)" class="subtitleList">
                             <div class="subtitleTextContainer">
                                 <span class="subtitleText fw-bold">
                                     @{
@@ -121,8 +222,11 @@
                                     @formattedTime
                                 </span>
                             </div>
-                            <div>
+                            <div class="d-flex justify-content-between flex-grow-1">
                                 <span class="text-white">@item.Text</span>
+                                <svg class="editTranscript d-none" width="15px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                    <path fill="white" d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z" />
+                                </svg>
                             </div>
                         </div>
                     }
@@ -131,6 +235,13 @@
         </div>
     </div>
     <div id="subtitleDisplay"></div>
+    <div class="customModal" id="myCustomModal">
+        <div class="customModal-content">
+            <span class="customModal-close" onclick="closeModal()">&times;</span>
+            <!-- Modal content here -->
+            <p>Your modal content here...</p>
+        </div>
+    </div>
     <script>
         var iframe = document.querySelector('iframe');
         var player = new Vimeo.Player(iframe);
@@ -183,7 +294,44 @@
             }
         }
 
-        function goToTime(time) {
+
+        function toggleVisibility() {
+            var editMenuContent = document.getElementById("editMenuContent");
+            editMenuContent.classList.toggle("d-none");
+        }
+
+        function toggleTimeStamps(elem) {
+            elem.children[0].classList.toggle("d-none")
+            var timeStamps = document.getElementsByClassName("subtitleTextContainer");
+            [...timeStamps].forEach((e, i) => {
+                e.classList.toggle("d-none");
+            })
+        }
+
+        function showEdit() {
+            var editTranscriptSvgs = document.getElementsByClassName("editTranscript");
+            [...editTranscriptSvgs].forEach((e, i) => {
+                e.classList.toggle("d-none");
+            })
+        }
+
+        function editTranscript(id) {
+            console.log("hello this is the ID: ", id);
+        }
+
+        function openModal() {
+            document.getElementById("myCustomModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("myCustomModal").style.display = "none";
+        }
+
+        function goToTime(time, event, id) {
+            if ((event.target.nodeName === "svg" || event.target.nodeName === "path") && !event.target.classList.contains("d-none")) {
+                editTranscript(id);
+                openModal();
+            }
             isManualScroll = true; // Enable manual scrolling
             player.setCurrentTime(time).then(() => {
                 updateSubtitles(time); // Update subtitles and highlight immediately after setting time

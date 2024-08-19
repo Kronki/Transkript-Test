@@ -13,7 +13,7 @@ using VimeoDotNet;
 using Newtonsoft.Json;
 using TranskriptTest.Models.VimeoClasses;
 using VimeoDotNet.Net;
-using AudioVisualizer;
+//using AudioVisualizer;
 using Xabe.FFmpeg;
 
 namespace TranskriptTest.Controllers

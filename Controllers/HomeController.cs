@@ -13,6 +13,8 @@ using VimeoDotNet;
 using Newtonsoft.Json;
 using TranskriptTest.Models.VimeoClasses;
 using VimeoDotNet.Net;
+using AudioVisualizer;
+using Xabe.FFmpeg;
 
 namespace TranskriptTest.Controllers
 {
@@ -243,8 +245,24 @@ namespace TranskriptTest.Controllers
             var test = Content(fileContent, "text/vtt", Encoding.UTF8);
             return Content(fileContent, "text/vtt", Encoding.UTF8);
         }
-        public IActionResult VideoFrame()
+        public async Task<IActionResult> VideoFrame()
         {
+            try
+            {
+                //var audio = new Models.Test.AudioVisualizer("Titulli i intervistes", @"C:\Users\Pulse Electronics\Desktop\audioTest\audioFiles\audio.mp3", @"C:\Users\Pulse Electronics\Desktop\audioTest\audiosToVideos", new Settings(), @"C:\Users\Pulse Electronics\Desktop\audioTest\audioLogos\logo.png");
+                //var ffmpegPath = @"C:\Users\Pulse Electronics\Desktop\ffmpeg-7.0.2-full_build\bin";
+                //var currentPath = Environment.GetEnvironmentVariable("PATH");
+                //if (!currentPath.Split(';').Contains(ffmpegPath, StringComparer.OrdinalIgnoreCase))
+                //{
+                //    // Append FFmpeg path to PATH environment variable if it's not already present
+                //    Environment.SetEnvironmentVariable("PATH", currentPath + ";" + ffmpegPath);
+                //}
+                //var test = await audio.GenerateVideo();
+            }
+            catch(Exception ex)
+            {
+
+            }
             return View();
         }
         public IActionResult SaveTextTrackToDb(string content, string link, string uri, int id)
@@ -371,7 +389,7 @@ namespace TranskriptTest.Controllers
             var isSaved = _db.SaveChanges();
             return Ok(isSaved >= 1);
         }
-        public IActionResult EditVideoFrame(int videoId)
+        public async Task<IActionResult> EditVideoFrame(int videoId)
         {
             var transcripts = _db.Transcripts.Where(x => x.VideoId == videoId).ToList();
             return View(transcripts);

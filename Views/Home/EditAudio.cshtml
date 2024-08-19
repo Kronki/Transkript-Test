@@ -12,8 +12,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio with Subtitles</title>
+    <script src="https://unpkg.com/wavesurfer.js"></script>
     <style>
-        #subtitleDisplay {
+        .subtitleDisplay {
             position: absolute;
             bottom: 20px;
             width: 90%;
@@ -24,6 +25,31 @@
             padding: 10px;
             box-sizing: border-box;
         }
+
+        #waveFormContainer {
+            background-color: #FFB735;
+        }
+        .scroll::-webkit-scrollbar {
+            background-color: black;
+        }
+
+        .playPauseContainer {
+            background-color: #FFB735;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+        }
+
+        .playPauseContainer:active {
+                background-color: #e6a530;
+        }
+
+        .playPauseContainer:hover {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -31,14 +57,41 @@
         <audio id="audioPlayer" controls>
             <source src="~/Audios/Yakuza.mp3" type="audio/mpeg" />
         </audio>
-        <div id="subtitleDisplay"></div>
+        <div class="subtitleDisplay"></div>
+        <div>
+            <div class="playPauseContainer">
+                <svg height="20px" id="play" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                    <path fill="white" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z" />
+                </svg>
+
+                <svg class="d-none" height="20px" id="pause" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
+                    <path fill="white" d="M48 64C21.5 64 0 85.5 0 112L0 400c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48L48 64zm192 0c-26.5 0-48 21.5-48 48l0 288c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48l-32 0z" />
+                </svg>
+
+            </div>
+            @* <button id="playWaveForm" class="btn btn-primary">Play/Pause</button> *@
+        </div>
+        <label>
+            Zoom: <input type="range" min="10" max="1000" value="100" />
+        </label>
+        <div id="waveFormContainer">
+            <div id="waveform">
+                <!-- the waveform will be rendered here -->
+            </div>
+            <span>Hey</span>
+        </div>
     </div>
+    <script src="~/js/waveform.js" type="module"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js"></script>
+
     <script>
+        var cues = [];
+        const subtitleDisplay = document.querySelector('.subtitleDisplay');
         function loadSubtitles(url) {
             fetch(url)
                 .then(response => response.text())
                 .then(text => {
-                    const cues = parseVTT(text);
+                    cues = parseVTT(text);
                     displaySubtitles(cues);
                 })
                 .catch(error => console.error('Error loading subtitles:', error));
@@ -73,7 +126,6 @@
 
         function displaySubtitles(cues) {
             const audio = document.getElementById('audioPlayer');
-            const subtitleDisplay = document.getElementById('subtitleDisplay');
 
             audio.addEventListener('timeupdate', () => {
                 const currentTime = audio.currentTime;
@@ -82,16 +134,12 @@
                 if (currentCue) {
                     subtitleDisplay.innerText = currentCue.text;
                 } else {
+                    subtitleDisplay.id = "";
                     subtitleDisplay.innerText = '';
                 }
             });
         }
-
-        // Load subtitles when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            const subtitleUrl = '@subtitleUrl';
-            loadSubtitles(subtitleUrl + "/Sub1.vtt");
-        });
+        
     </script>
 </body>
 </html>

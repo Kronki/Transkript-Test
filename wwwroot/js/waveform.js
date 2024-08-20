@@ -1,26 +1,33 @@
-﻿//import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js'
-
-const wavesurfer = WaveSurfer.create({
+﻿const wavesurfer = WaveSurfer.create({
     container: '#waveform',
-    waveColor: '#4d4d4d',
+    waveColor: '#666666',
     progressColor: '#000000',
     url: 'http://localhost:5157/Videos/Test.mp4',
     minPxPerSec: 200,
-    //plugins: [TimelinePlugin.create()],
-})
+    barWidth: 3,
+    barGap: 3,
+    barHeight: 0.5,
+    barMinHeight: 1,
+    hideScrollbar: true
+});
 
 wavesurfer.once('decode', () => {
-    //const slider = document.querySelector('input[type="range"]')
+    const playPauseContainer = document.querySelector('.playPauseContainer');
+    const startTimeElement = document.getElementById('startTime');
+    const endTimeElement = document.getElementById('endTime');
 
-    //slider.addEventListener('input', (e) => {
-    //    const minPxPerSec = e.target.valueAsNumber
-    //    console.log(minPxPerSec)
-    //    wavesurfer.zoom(minPxPerSec)
-    //})
-    
-    var playPauseContainer = document.querySelector('.playPauseContainer');
+    const volumeSlider = document.getElementById('volumeSlider');
+    volumeSlider.addEventListener('input', (e) => {
+        const volume = e.target.valueAsNumber;
+        wavesurfer.setVolume(volume);
+    });
 
-    playPauseContainer.addEventListener('click', (event) => {
+
+
+    // Update the end time to the total duration
+    endTimeElement.innerText = formatTime(wavesurfer.getDuration());
+
+    playPauseContainer.addEventListener('click', () => {
         wavesurfer.playPause();
     });
 
@@ -32,11 +39,10 @@ wavesurfer.once('decode', () => {
     wavesurfer.on('play', () => {
         playPauseContainer.children[0].classList.add('d-none');
         playPauseContainer.children[1].classList.remove('d-none');
-    })
-    const subtitleUrl = 'http://localhost:5157/Subtitles';
-    loadSubtitles(subtitleUrl + "/Sub1.vtt");
+    });
 
     wavesurfer.on('timeupdate', (currentTime) => {
+        startTimeElement.innerText = formatTime(currentTime);
         const currentCue = cues.find(cue => currentTime >= cue.start && currentTime <= cue.end);
 
         if (currentCue) {
@@ -46,7 +52,20 @@ wavesurfer.once('decode', () => {
             subtitleDisplay.classList.remove('subtitleDisplay');
             subtitleDisplay.innerText = '';
         }
-        console.log('Time', currentTime + 's')
-    })
-    
-})
+        console.log('Time', currentTime + 's');
+    });
+});
+
+// Utility function to format time in mm:ss format
+function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const sec = Math.floor(seconds % 60);
+
+    if (hours > 0) {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+}
+

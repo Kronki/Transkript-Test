@@ -111,25 +111,61 @@ namespace TranskriptTest.Controllers
         public async Task<IActionResult> AddVideo(Request request)
         {
             if (request.MyFile == null || request.MyFile.Length == 0)
+            {
                 return BadRequest("No file uploaded.");
-            var lastVideoLocation = await _db.Videos.OrderBy(x => x.Id).LastOrDefaultAsync();
-            var fileName = Path.GetFileName(request.MyFile.FileName);
-            var filePath = Path.Combine(_env.WebRootPath, "Videos", fileName);
+            }
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            // Save the video file to a temporary location
+            var tempVideoPath = Path.Combine(Path.GetTempPath(), request.MyFile.FileName);
+            using (var stream = new FileStream(tempVideoPath, FileMode.Create))
             {
                 await request.MyFile.CopyToAsync(stream);
             }
 
-            var video = new Video
-            {
-                Path = filePath,
-                FileName = fileName,
-            };
+            // Extract the audio
+            var audioFilePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(request.MyFile.FileName, ".mp3"));
+            await ExtractAudioFromFileAsync(tempVideoPath, audioFilePath);
 
-            _db.Videos.Add(video);
-            await _db.SaveChangesAsync();
-            return View("Videos");
+            // Upload video to Vimeo if needed
+            // Your Vimeo upload logic here
+
+            // Cleanup temporary files
+            if (System.IO.File.Exists(tempVideoPath))
+            {
+                System.IO.File.Delete(tempVideoPath);
+            }
+
+            //if (System.IO.File.Exists(audioFilePath))
+            //{
+            //    System.IO.File.Delete(audioFilePath);
+            //}
+
+            return Ok("Video and audio processed successfully.");
+            //if (request.MyFile == null || request.MyFile.Length == 0)
+            //    return BadRequest("No file uploaded.");
+            //var lastVideoLocation = await _db.Videos.OrderBy(x => x.Id).LastOrDefaultAsync();
+            //var fileName = Path.GetFileName(request.MyFile.FileName);
+            //var filePath = Path.Combine(_env.WebRootPath, "Videos", fileName);
+
+            //using (var stream = new FileStream(filePath, FileMode.Create))
+            //{
+            //    await request.MyFile.CopyToAsync(stream);
+            //}
+
+            //var video = new Video
+            //{
+            //    Path = filePath,
+            //    FileName = fileName,
+            //};
+
+            //_db.Videos.Add(video);
+            //await _db.SaveChangesAsync();
+            //return View("Videos");
+        }
+        private async Task ExtractAudioFromFileAsync(string inputVideoPath, string outputAudioPath)
+        {
+            var conversion = await FFmpeg.Conversions.FromSnippet.ExtractAudio(inputVideoPath, outputAudioPath);
+            await conversion.Start();
         }
         [HttpPost]
         public async Task<IActionResult> AddSubtitle(Request request)

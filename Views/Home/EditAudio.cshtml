@@ -29,8 +29,9 @@
         #waveFormContainer {
             background-color: #FFB735;
         }
-        .scroll::-webkit-scrollbar {
-            background-color: black;
+
+        #waveform {
+            padding: 20px 20px 0 20px;
         }
 
         .playPauseContainer {
@@ -50,13 +51,31 @@
         .playPauseContainer:hover {
             cursor: pointer;
         }
+
+        .timeLabels {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            font-size: 12px;
+            color: #987231;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        #startTime {
+            text-align: left;
+        }
+
+        #endTime {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
     <div style="margin-top: 200px;">
-        <audio id="audioPlayer" controls>
+        @* <audio id="audioPlayer" controls>
             <source src="~/Audios/Yakuza.mp3" type="audio/mpeg" />
-        </audio>
+        </audio> *@
         <div class="subtitleDisplay"></div>
         <div>
             <div class="playPauseContainer">
@@ -74,17 +93,34 @@
         <label>
             Zoom: <input type="range" min="10" max="1000" value="100" />
         </label>
+        <label>
+            Volume: <input type="range" min="0" max="1" step="0.01" id="volumeSlider" value="1" />
+        </label>
+
         <div id="waveFormContainer">
             <div id="waveform">
                 <!-- the waveform will be rendered here -->
             </div>
-            <span>Hey</span>
+            <div id="waveform-timeline"></div>
+            <div class="timeLabels">
+                <span id="startTime">00:00</span>
+                <span id="endTime">00:00</span>
+            </div>
+            @* <span>Hey</span> *@
         </div>
     </div>
-    <script src="~/js/waveform.js" type="module"></script>
+    @* <script src="https://player.vimeo.com/api/player.js"></script> *@
+    <script asp-append-version="true" src="~/js/waveform.js" type="module"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js"></script>
 
     <script>
+        const videoElement = document.createElement('video');
+        videoElement.src = 'https://vimeo.com/990565046';
+
+        // const audioContext = new AudioContext();
+        // const source = audioContext.createMediaElementSource(videoElement);
+        // source.connect(audioContext.destination);
+
         var cues = [];
         const subtitleDisplay = document.querySelector('.subtitleDisplay');
         function loadSubtitles(url) {

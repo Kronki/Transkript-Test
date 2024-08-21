@@ -108,60 +108,75 @@ namespace TranskriptTest.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
         [HttpPost]
-        public async Task<IActionResult> AddVideo(Request request)
+        public async Task<IActionResult> AddVideo(IFormFile file, long start, long end, int chunkNumber, int totalChunks)
         {
-            if (request.MyFile == null || request.MyFile.Length == 0)
+            if (file == null || file.Length == 0)
             {
                 return BadRequest("No file uploaded.");
             }
 
-            // Save the video file to a temporary location
-            var tempVideoPath = Path.Combine(Path.GetTempPath(), request.MyFile.FileName);
-            using (var stream = new FileStream(tempVideoPath, FileMode.Create))
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
+            var tempFilePath = Path.Combine(Path.GetTempPath(), fileNameWithoutExtension + ".tmp");
+
+            // Append the uploaded chunk to the temporary file
+            using (var stream = new FileStream(tempFilePath, FileMode.Append, FileAccess.Write))
             {
-                await request.MyFile.CopyToAsync(stream);
+                await file.CopyToAsync(stream);
             }
 
-            // Extract the audio
-            var audioFilePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(request.MyFile.FileName, ".mp3"));
-            await ExtractAudioFromFileAsync(tempVideoPath, audioFilePath);
-
-            // Upload video to Vimeo if needed
-            // Your Vimeo upload logic here
-
-            // Cleanup temporary files
-            if (System.IO.File.Exists(tempVideoPath))
+            // Check if all chunks have been uploaded
+            if (chunkNumber == totalChunks - 1)
             {
-                System.IO.File.Delete(tempVideoPath);
+                // Start background task for MP3 conversion
+                _ = Task.Run(() => ConvertToMp3(tempFilePath));
+
+                return Ok("File uploaded and assembled successfully. Conversion to MP3 started.");
             }
 
-            //if (System.IO.File.Exists(audioFilePath))
-            //{
-            //    System.IO.File.Delete(audioFilePath);
-            //}
-
-            return Ok("Video and audio processed successfully.");
-            //if (request.MyFile == null || request.MyFile.Length == 0)
-            //    return BadRequest("No file uploaded.");
-            //var lastVideoLocation = await _db.Videos.OrderBy(x => x.Id).LastOrDefaultAsync();
-            //var fileName = Path.GetFileName(request.MyFile.FileName);
-            //var filePath = Path.Combine(_env.WebRootPath, "Videos", fileName);
-
-            //using (var stream = new FileStream(filePath, FileMode.Create))
-            //{
-            //    await request.MyFile.CopyToAsync(stream);
-            //}
-
-            //var video = new Video
-            //{
-            //    Path = filePath,
-            //    FileName = fileName,
-            //};
-
-            //_db.Videos.Add(video);
-            //await _db.SaveChangesAsync();
-            //return View("Videos");
+            return Ok();
         }
+
+
+        private async Task ConvertToMp3(string tempFilePath)
+        {
+            var outputMp3Path = Path.Combine(Path.GetTempPath(), "output.mp3");
+
+            try
+            {
+                // Convert the file to MP3 with a lower bitrate for faster processing
+                var conversion = await FFmpeg.Conversions.New()
+                    .AddParameter($"-i \"{tempFilePath}\" -vn -ar 44100 -ac 2 -b:a 128k \"{outputMp3Path}\"")
+                    .Start();
+
+                var guidId = Guid.NewGuid().ToString();
+
+                // Optionally handle the MP3 file (e.g., move it to a permanent location, notify the user, etc.)
+                var permanentMp3Path = Path.Combine(_env.WebRootPath, "Audios", "convertedAudio" + guidId + ".mp3");
+
+                if (System.IO.File.Exists(outputMp3Path))
+                {
+                    System.IO.File.Move(outputMp3Path, permanentMp3Path);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle conversion errors
+                // Log the error or take appropriate actions
+                Console.WriteLine($"Error during MP3 conversion: {ex.Message}");
+            }
+            finally
+            {
+                // Clean up the temporary chunk file
+                if (System.IO.File.Exists(tempFilePath))
+                {
+                    System.IO.File.Delete(tempFilePath);
+                }
+            }
+        }
+
+
+
+
         private async Task ExtractAudioFromFileAsync(string inputVideoPath, string outputAudioPath)
         {
             var conversion = await FFmpeg.Conversions.FromSnippet.ExtractAudio(inputVideoPath, outputAudioPath);

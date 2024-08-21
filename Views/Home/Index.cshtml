@@ -4,11 +4,16 @@
     var selectVideos = ViewData["SelectVideos"] as SelectList;
 }
 
+<link rel="stylesheet" href="~/css/spinner.css"/>
 <div class="text-center">
     <form asp-action="AddVideo" method="post" enctype="multipart/form-data">
-        <input asp-for="MyFile" id="fileInput" type="file" placeholder="Video" accept="video/mp4,video/x-m4v,video/*" />
-        <button type="submit">Upload Video</button>
+        <input id="fileInput" type="file" placeholder="Video" accept="video/mp4,video/x-m4v,video/*" />
+        <button type="button" onclick="uploadFile()">Upload Video</button>
     </form>
+    <div id="uploadProgress" style="display: none;">
+        <div class="spinner"></div>
+        <div id="progressText">0%</div>
+    </div>
     <hr />
     <form class="mt-5" asp-action="AddSubtitle" method="post" enctype="multipart/form-data">
         <input asp-for="MyFile" id="my-file2" type="file" placeholder="Video" />
@@ -20,47 +25,17 @@
 </div>
 
 @section scripts {
+    <script src="~/js/uploadChunks.js"></script>
     <script>
-        const test = async () => {
-            var fileInput = document.getElementById("fileInput");
-            await fetch("http://localhost:5157/Home/AddVideo", {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                method: "POST",
-                body: fileInput.files[0]
-            })
-        }
-
-        // async function uploadFile() {
-        //     const fileInput = document.getElementById('fileInput');
-        //     const file = fileInput.files[0];
-        //     const chunkSize = 5 * 1024 * 1024; // 5 MB chunks
-        //     const totalChunks = Math.ceil(file.size / chunkSize);
-
-        //     const uploadChunk = async (chunk, start, end, chunkNumber) => {
-        //         const formData = new FormData();
-        //         formData.append('file', chunk, file.name);
-        //         formData.append('start', start);
-        //         formData.append('end', end);
-        //         formData.append('chunkNumber', chunkNumber);
-        //         formData.append('totalChunks', totalChunks);
-
-        //         await fetch('http://localhost:5157/Home/AddVideo', {
-        //             method: 'POST',
-        //             body: formData
-        //         });
-        //     };
-
-        //     let start = 0;
-        //     let end = chunkSize;
-
-        //     for (let chunkNumber = 0; chunkNumber < totalChunks; chunkNumber++) {
-        //         const chunk = file.slice(start, end);
-        //         await uploadChunk(chunk, start, end, chunkNumber);
-        //         start = end;
-        //         end = Math.min(start + chunkSize, file.size);
-        //     }
+        // const test = async () => {
+        //     var fileInput = document.getElementById("fileInput");
+        //     await fetch("http://localhost:5157/Home/AddVideo", {
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //         },
+        //         method: "POST",
+        //         body: fileInput.files[0]
+        //     })
         // }
     </script>
 }

@@ -47,7 +47,6 @@ async function startUpload(file) {
 
     // Hide the spinner when done
     document.getElementById('uploadProgress').style.display = 'none';
-    alert('Upload complete! Conversion to MP3 started.');
 }
 
 // Assuming you have an input element to select the file

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
 using System.Text.Json.Serialization;
 using TranskriptTest.Data;
+using TranskriptTest.Models.VimeoClasses.VimeoService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +26,13 @@ builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 }).AddNewtonsoftJson(options =>
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
             );
+
+builder.Services.Configure<VimeoSettings>(builder.Configuration.GetSection("VimeoSettings"));
+builder.Services.AddHttpClient<VimeoService>(client =>
+{
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "0bdb22134b168497f1f3ba85fe2beab5");
+});
+
 var connectionString = builder.Configuration.GetConnectionString("Dev");
 builder.Services.AddDbContext<VideoDbContext>(opt =>
 {

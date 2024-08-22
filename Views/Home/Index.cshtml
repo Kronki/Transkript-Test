@@ -14,6 +14,10 @@
         <div class="spinner"></div>
         <div id="progressText">0%</div>
     </div>
+    <form asp-action="AddVideo" method="post" enctype="multipart/form-data">
+        <input id="fileInputVimeo" type="file" placeholder="Video" accept="video/mp4,video/x-m4v,video/*" />
+        <button type="button" onclick="uploadFileToVimeo()">Upload Video to Vimeo</button>
+    </form>
     <hr />
     <form class="mt-5" asp-action="AddSubtitle" method="post" enctype="multipart/form-data">
         <input asp-for="MyFile" id="my-file2" type="file" placeholder="Video" />
@@ -26,6 +30,7 @@
 
 @section scripts {
     <script src="~/js/uploadChunks.js"></script>
+    <script src="~/js/uploadToVimeo.js"></script>
     <script>
         // const test = async () => {
         //     var fileInput = document.getElementById("fileInput");

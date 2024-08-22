@@ -15,6 +15,7 @@ using TranskriptTest.Models.VimeoClasses;
 using VimeoDotNet.Net;
 //using AudioVisualizer;
 using Xabe.FFmpeg;
+using TranskriptTest.Models.VimeoClasses.VimeoService;
 
 namespace TranskriptTest.Controllers
 {
@@ -23,14 +24,37 @@ namespace TranskriptTest.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly VideoDbContext _db;
         private readonly IWebHostEnvironment _env;
+        private readonly VimeoService _vimeoService;
 
         string accessToken = "0bdb22134b168497f1f3ba85fe2beab5";
 
-        public HomeController(ILogger<HomeController> logger, VideoDbContext db, IWebHostEnvironment env)
+        public HomeController(ILogger<HomeController> logger, VideoDbContext db, IWebHostEnvironment env, VimeoService vimeoService)
         {
             _logger = logger;
             _db = db;
             _env = env;
+            _vimeoService = vimeoService;
+        }
+        [HttpPost]
+        public async Task<IActionResult> UploadToVimeo(IFormFile videoFile, string videoName)
+        {
+            if (videoFile == null || videoFile.Length == 0)
+            {
+                return BadRequest("No video file was uploaded.");
+            }
+
+            try
+            {
+                // Upload the video directly from the stream
+                using var videoStream = videoFile.OpenReadStream();
+                var videoUri = await _vimeoService.UploadVideoAsync(videoStream, videoFile.Length, videoName);
+
+                return Ok(new { videoUri });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+            }
         }
         public async Task<IActionResult> Vimeo()
         {
@@ -116,7 +140,7 @@ namespace TranskriptTest.Controllers
             }
 
             var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
-            var tempFilePath = Path.Combine(Path.GetTempPath(), fileNameWithoutExtension + ".tmp");
+            var tempFilePath = Path.Combine(Path.GetTempPath(), fileNameWithoutExtension + ".mp4");
 
             // Append the uploaded chunk to the temporary file
             using (var stream = new FileStream(tempFilePath, FileMode.Append, FileAccess.Write))

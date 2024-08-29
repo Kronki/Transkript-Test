@@ -102,7 +102,8 @@
 <body>
     <div id="subtitleContainer w-100">
         <div class="d-flex gap-3 align-items-center">
-            <iframe src="https://player.vimeo.com/video/990565046?title=0&amp;byline=0&amp;portrait=0&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="789" height="444" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write" title="Test"></iframe>
+            <iframe src="https://player.vimeo.com/video/990565046?title=0&amp;byline=0&amp;portrait=0&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" width="789" height="444" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write" title="test"></iframe>
+            @* <div id="vimeo-player"></div> *@
             <div>
                 <button onclick="goToEdit()" class="btn btn-primary">Edito</button>
             </div>
@@ -123,7 +124,7 @@
             <button class="btn btn-success" onclick="saveChanges()">Ruaj</button>
         </div>
 
-        <div class="d-none">
+        <div class="">
             <div class="d-flex gap-3">
                 <button class="btn btn-primary" onclick="setLower()">Lower</button>
                 <button class="btn btn-primary" onclick="setHigher()">Higher</button>
@@ -164,7 +165,18 @@
             var iframe = document.querySelector('iframe');
             var videoId = getVimeoId(iframe.src);
             var player = new Vimeo.Player(iframe);
-
+            // var options = {
+            //     id: 990565046,  // Replace with your Vimeo video ID
+            //     width: 640,
+            //     loop: true,
+            //     title: false,    // Hide the title
+            //     byline: false,   // Hide the byline
+            //     portrait: false, // Hide the portrait
+            //     controls: true,  // Show controls, but hide settings button
+            //     dnt: true        // Do Not Track, removes the Vimeo logo
+            // };
+            // var player = new Vimeo.Player('vimeo-player', options);
+            
 
             function goToEdit() {
                 window.location.replace(`/Home/EditVideoFrame?videoId=${videoId}`);
@@ -276,7 +288,14 @@
             var textTrackURI = "";
             var scale = 10;
             var multiplier = 1;
+
+
+
+
             // getVimeoURI();
+
+
+
             // player.setVolume(0).then(() => { });
 
             // player.on('play', function () {
@@ -472,21 +491,53 @@
                 return match ? match[1] : null;
             }
 
+
+
+
+
             //function to get the details of the video
-            function getVimeoURI() {
-                fetch(`https://api.vimeo.com/videos/${videoId}`, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": `bearer ${accessToken}`,
-                        "Accept": "application/vnd.vimeo.*+json;version=3.4",
+            async function getVimeoURI() {
+                try {
+                    const requestBody = {
+                        text: encSubs(),
+                        videoId: videoId,
+                        name: "Titra",
                     }
-                }).then(response => response.json())
-                    .then((response) => {
-                        textTrackURI = response.metadata.connections.texttracks.uri;
-                        console.log(response);
-                        getSubtitleUpload(response.metadata.connections.texttracks.uri);
-                    });
+
+                    const test = encSubs();
+
+                    console.log("encoded subs", test);
+
+                    await fetch(`http://localhost:5157/Home/AddTextTrack/`, {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    })
+                }
+                catch(err) {
+
+                }
+
+
+                // fetch(`https://api.vimeo.com/videos/${videoId}`, {
+                //     method: "GET",
+                //     headers: {
+                //         "Authorization": `bearer ${accessToken}`,
+                //         "Accept": "application/vnd.vimeo.*+json;version=3.4",
+                //     }
+                // }).then(response => response.json())
+                //     .then((response) => {
+                //         textTrackURI = response.metadata.connections.texttracks.uri;
+                //         console.log(response);
+                //         getSubtitleUpload(response.metadata.connections.texttracks.uri);
+                //     });
             }
+
+
+
+
 
             //function to get the upload link for the video
             function getSubtitleUpload(textTrack) {
@@ -505,8 +556,9 @@
                 }).then(response => response.json())
                     .then((response) => {
                         console.log("1", response.id);
+                        console.log("2", response.link);
                         subtitleUploadLink = response.link;
-                        encodeSubtitles(response.id, response.link);
+                        // encodeSubtitles(response.id, response.link);
                     });
             }
 
@@ -578,6 +630,20 @@
                 var lastSubtitle = Array.from(subtitles).at(-1);
                 lastSubtitle.appendChild(newButton);
             };
+
+            function encSubs() {
+                var subtitles = 'WEBVTT\n\n';
+
+                var subtitleTexts = document.getElementsByClassName('subtitle-text');
+                var subtitleInputDivs = document.getElementsByClassName('time-inputs');
+                [...subtitleTexts].forEach((e, i) => {
+                    subtitles += `${i + 1}\n`;
+                    subtitles += `${subtitleInputDivs[i].children[0].value}.000 --> ${subtitleInputDivs[i].children[1].value}.000\n`;
+                    subtitles += `${e.value}\n\n`;
+                })
+                var encodedSubtitles = encodeURIComponent(subtitles);
+                return subtitles;
+            }
 
             //function to encode the subtitles when you make a create request
             function encodeSubtitles(id, link) {

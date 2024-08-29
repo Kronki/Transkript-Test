@@ -16,6 +16,9 @@ using VimeoDotNet.Net;
 //using AudioVisualizer;
 using Xabe.FFmpeg;
 using TranskriptTest.Models.VimeoClasses.VimeoService;
+using System.Net.Http.Headers;
+using System.Net.Http;
+using System.Text.Json;
 
 namespace TranskriptTest.Controllers
 {
@@ -25,15 +28,17 @@ namespace TranskriptTest.Controllers
         private readonly VideoDbContext _db;
         private readonly IWebHostEnvironment _env;
         private readonly VimeoService _vimeoService;
+        private readonly HttpClient _httpClient;
 
         string accessToken = "0bdb22134b168497f1f3ba85fe2beab5";
 
-        public HomeController(ILogger<HomeController> logger, VideoDbContext db, IWebHostEnvironment env, VimeoService vimeoService)
+        public HomeController(ILogger<HomeController> logger, VideoDbContext db, IWebHostEnvironment env, VimeoService vimeoService, HttpClient httpClient)
         {
             _logger = logger;
             _db = db;
             _env = env;
             _vimeoService = vimeoService;
+            _httpClient = httpClient;
         }
         [HttpPost]
         public async Task<IActionResult> UploadToVimeo(IFormFile videoFile, string videoName)
@@ -468,6 +473,71 @@ namespace TranskriptTest.Controllers
         {
             var transcripts = _db.Transcripts.Where(x => x.VideoId == videoId).ToList();
             return View(transcripts);
+        }
+        [HttpPost]
+        public async Task<IActionResult> AddTextTrack([FromBody] Request2 request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Text) || string.IsNullOrEmpty(request.VideoId))
+                {
+                    return BadRequest("Subtitle text or Video ID is missing.");
+                }
+
+                // Step 2: Get the upload link for the text track
+                var createTrackContent = new StringContent(
+                    System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        type = "subtitles",
+                        language = "en",
+                        name = request.Name
+                    }),
+                    Encoding.UTF8,
+                    "application/json"
+                );
+
+                var createTrackRequest = new HttpRequestMessage(HttpMethod.Post, $"https://api.vimeo.com/videos/{request.VideoId}/texttracks")
+                {
+                    Headers =
+                {
+                    Authorization = new AuthenticationHeaderValue("Bearer", "0bdb22134b168497f1f3ba85fe2beab5"),
+                },
+                    Content = createTrackContent
+                };
+
+                var createTrackResponse = await _httpClient.SendAsync(createTrackRequest);
+                if (!createTrackResponse.IsSuccessStatusCode)
+                {
+                    var error = await createTrackResponse.Content.ReadAsStringAsync();
+                    return StatusCode((int)createTrackResponse.StatusCode, error);
+                }
+
+                var createTrackResult = await createTrackResponse.Content.ReadAsStringAsync();
+                var uploadLink = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(createTrackResult).GetProperty("link").GetString();
+
+                // Step 3: Upload the text track
+                var uploadContent = new StringContent(request.Text, Encoding.UTF8, "text/vtt");
+                var uploadRequest = new HttpRequestMessage(HttpMethod.Put, uploadLink)
+                {
+                    Content = uploadContent
+                };
+
+                uploadRequest.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse("application/vnd.vimeo.*+json;version=3.4"));
+
+                var uploadResponse = await _httpClient.SendAsync(uploadRequest);
+                if (uploadResponse.IsSuccessStatusCode)
+                {
+                    var result = await uploadResponse.Content.ReadAsStringAsync();
+                    return Ok(result);
+                }
+
+                var uploadError = await uploadResponse.Content.ReadAsStringAsync();
+                return StatusCode((int)uploadResponse.StatusCode, uploadError);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
